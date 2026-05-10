@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { NoteCache, noteStem, toCachedNote } from "../src/zk/note-cache.ts";
+import { NoteCache, noteStem, resolveAutocompleteLimit, toCachedNote } from "../src/zk/note-cache.ts";
 
 test("noteStem strips .md extensions", () => {
 	assert.equal(noteStem("journal/2026-05-09.md"), "2026-05-09");
@@ -91,4 +91,18 @@ test("NoteCache serves stale results when loader fails", async () => {
 	const second = await cache.get();
 	assert.equal(second.length, 1);
 	assert.equal(errors.length, 1);
+});
+
+test("resolveAutocompleteLimit defaults to 500 notes", () => {
+	assert.equal(resolveAutocompleteLimit({}), 500);
+});
+
+test("resolveAutocompleteLimit accepts ZK_AUTOCOMPLETE_LIMIT", () => {
+	assert.equal(resolveAutocompleteLimit({ ZK_AUTOCOMPLETE_LIMIT: "1200" }), 1200);
+});
+
+test("resolveAutocompleteLimit clamps invalid and excessive values", () => {
+	assert.equal(resolveAutocompleteLimit({ ZK_AUTOCOMPLETE_LIMIT: "not-a-number" }), 500);
+	assert.equal(resolveAutocompleteLimit({ ZK_AUTOCOMPLETE_LIMIT: "0" }), 500);
+	assert.equal(resolveAutocompleteLimit({ ZK_AUTOCOMPLETE_LIMIT: "99999" }), 5000);
 });

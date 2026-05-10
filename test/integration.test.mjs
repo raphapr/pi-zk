@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -152,6 +152,29 @@ maybe("zk_create_note auto-creates nested directories and appends content", asyn
 		assert.match(body, /first bullet/);
 	} finally {
 		await rm(notebook, { recursive: true, force: true });
+	}
+});
+
+maybe("zk_create_note rejects symlinked target directories before creating outside the notebook", async () => {
+	const notebook = await makeNotebook();
+	const outside = await mkdtemp(join(tmpdir(), "pi-zk-escape-"));
+	try {
+		await symlink(outside, join(notebook, "escape"));
+		const tool = captureTool(registerCreateNoteTool);
+		await assert.rejects(
+			tool.execute(
+				"create-escape",
+				{ title: "Escaped", directory: "escape/nested", notebook },
+				undefined,
+				undefined,
+				{ cwd: notebook },
+			),
+			/outside notebook|symlink/i,
+		);
+		await assert.rejects(access(join(outside, "nested")), { code: "ENOENT" });
+	} finally {
+		await rm(notebook, { recursive: true, force: true });
+		await rm(outside, { recursive: true, force: true });
 	}
 });
 

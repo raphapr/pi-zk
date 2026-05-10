@@ -13,7 +13,7 @@ import { registerTaglessNotesTool } from "./tools/tagless-notes.js";
 import { runZk } from "./zk/client.js";
 import { resolveNotebook, type NotebookResolution } from "./zk/config.js";
 import { buildZkGuidance } from "./zk/guidance.js";
-import { NoteCache } from "./zk/note-cache.js";
+import { NoteCache, resolveAutocompleteLimit } from "./zk/note-cache.js";
 import { withNotebookFlag } from "./zk/notebook.js";
 import { NOTE_LIST_FORMAT, parseNoteList } from "./zk/parsers.js";
 
@@ -50,7 +50,7 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 					"--sort",
 					"modified-",
 					"--limit",
-					"500",
+					String(resolveAutocompleteLimit()),
 					"--format",
 					NOTE_LIST_FORMAT,
 				]);

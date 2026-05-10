@@ -15,6 +15,16 @@ export interface NoteCacheOptions {
 }
 
 const DEFAULT_TTL_MS = 60_000;
+const DEFAULT_AUTOCOMPLETE_LIMIT = 500;
+const MAX_AUTOCOMPLETE_LIMIT = 5_000;
+
+export function resolveAutocompleteLimit(env: NodeJS.ProcessEnv = process.env): number {
+	const raw = env.ZK_AUTOCOMPLETE_LIMIT?.trim();
+	if (!raw) return DEFAULT_AUTOCOMPLETE_LIMIT;
+	const parsed = Number.parseInt(raw, 10);
+	if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_AUTOCOMPLETE_LIMIT;
+	return Math.min(parsed, MAX_AUTOCOMPLETE_LIMIT);
+}
 
 /**
  * Deterministic filename stem (path without extension). Used both as the

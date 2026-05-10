@@ -68,28 +68,28 @@ test("buildSearchNotesArgs adds match, tag, and date flags", () => {
 	assert.match(joined, /--created-after 2026-01-01/);
 });
 
-test("buildSearchNotesArgs default limit is 50", () => {
+test("buildSearchNotesArgs default limit fetches one extra row for hasMore", () => {
 	const args = buildSearchNotesArgs({});
 	const idx = args.indexOf("--limit");
-	assert.equal(args[idx + 1], "50");
+	assert.equal(args[idx + 1], "51");
 });
 
-test("buildSearchNotesArgs respects custom limit", () => {
+test("buildSearchNotesArgs respects custom limit and fetches one extra row", () => {
 	const args = buildSearchNotesArgs({ limit: 10 });
 	const idx = args.indexOf("--limit");
-	assert.equal(args[idx + 1], "10");
+	assert.equal(args[idx + 1], "11");
 });
 
-test("buildSearchNotesArgs clamps to MAX_LIMIT", () => {
+test("buildSearchNotesArgs clamps returned limit but still fetches one extra row", () => {
 	const args = buildSearchNotesArgs({ limit: 5000 });
 	const idx = args.indexOf("--limit");
-	assert.equal(args[idx + 1], "200");
+	assert.equal(args[idx + 1], "201");
 });
 
-test("buildSearchNotesArgs fetches limit+offset and clamps", () => {
+test("buildSearchNotesArgs fetches offset + limit + one extra row", () => {
 	const args = buildSearchNotesArgs({ limit: 150, offset: 100 });
 	const idx = args.indexOf("--limit");
-	assert.equal(args[idx + 1], "200");
+	assert.equal(args[idx + 1], "251");
 });
 
 test("buildSearchNotesArgs appends positional paths last", () => {

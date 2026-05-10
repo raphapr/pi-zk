@@ -6,6 +6,7 @@ import { runZk } from "../zk/client.js";
 import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
 import { NotebookOverride } from "../zk/schemas.js";
 import {
+	resolveCreatableNotebookPath,
 	resolveNotebookPath,
 	validateRelativeDirectory,
 	validateTitle,
@@ -85,7 +86,7 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 				// zk new fails when the target directory does not exist. Auto-create so
 				// users don't have to pre-mkdir for new sections of the notebook.
 				if (directory) {
-					const absDir = resolveNotebookPath(notebook.path, join(notebook.path, directory));
+					const absDir = resolveCreatableNotebookPath(notebook.path, join(notebook.path, directory));
 					await mkdir(absDir, { recursive: true });
 				}
 

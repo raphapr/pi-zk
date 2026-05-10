@@ -57,6 +57,8 @@ see [[zett▎       zettelkasten   — Zettelkasten  #theory
 
 - Match runs across filename stem, title, and tags
 - Suggestions are capped at 20
+- The cache indexes the 500 most recently modified notes by default
+- Set `ZK_AUTOCOMPLETE_LIMIT` to raise or lower the indexed-note cap (maximum 5000)
 - Notes are cached per notebook with a 60-second TTL
 - Cache is invalidated automatically after `zk_create_note`, `zk_edit_note`, and `zk_append_note`
 
@@ -76,6 +78,7 @@ Notebook resolution checks in order:
 Other env vars:
 
 - `ZK_BIN` — explicit path to the `zk` binary (defaults to `~/.local/bin/zk`, then `zk` on `PATH`)
+- `ZK_AUTOCOMPLETE_LIMIT` — number of recent notes indexed for wikilink autocomplete (default 500, maximum 5000)
 - `ZK_EDITOR`, `EDITOR`, `VISUAL` — forced to `true` during `zk_create_note` so non-interactive notes are created without launching your editor
 
 ## Safety

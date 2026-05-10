@@ -1,5 +1,5 @@
 import { realpathSync } from "node:fs";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 export class ValidationError extends Error {
 	constructor(message: string) {
@@ -66,6 +66,24 @@ export interface ResolvePathOptions {
  * the notebook. Follows symlinks via `realpath` when available so that links
  * pointing outside the notebook are rejected.
  */
+function assertInsideNotebook(resolvedRoot: string, resolvedTarget: string, originalTarget: string, allowRoot = false): void {
+	const rel = relative(resolvedRoot, resolvedTarget);
+	if ((!allowRoot && !rel) || rel.startsWith("..") || isAbsolute(rel)) {
+		throw new ValidationError(`path is outside notebook: ${originalTarget}`);
+	}
+	if (rel.split(sep).includes("..")) {
+		throw new ValidationError(`path traverses outside notebook: ${originalTarget}`);
+	}
+}
+
+function realNotebookRoot(notebookRoot: string, real: (path: string) => string): string {
+	try {
+		return real(notebookRoot);
+	} catch {
+		return resolve(notebookRoot);
+	}
+}
+
 export function resolveNotebookPath(notebookRoot: string, target: string, options: ResolvePathOptions = {}): string {
 	if (typeof target !== "string" || !target.trim()) {
 		throw new ValidationError("path is empty");
@@ -73,13 +91,7 @@ export function resolveNotebookPath(notebookRoot: string, target: string, option
 	if (CONTROL_CHARS.test(target)) throw new ValidationError("path contains control characters");
 
 	const real = options.realpath ?? ((p) => realpathSync(p));
-	let resolvedRoot: string;
-	try {
-		resolvedRoot = real(notebookRoot);
-	} catch {
-		resolvedRoot = resolve(notebookRoot);
-	}
-
+	const resolvedRoot = realNotebookRoot(notebookRoot, real);
 	const absoluteTarget = isAbsolute(target) ? target : resolve(resolvedRoot, target);
 	let resolvedTarget: string;
 	try {
@@ -89,12 +101,40 @@ export function resolveNotebookPath(notebookRoot: string, target: string, option
 		resolvedTarget = resolve(absoluteTarget);
 	}
 
-	const rel = relative(resolvedRoot, resolvedTarget);
-	if (!rel || rel.startsWith("..") || (isAbsolute(rel) && rel !== resolvedTarget)) {
-		throw new ValidationError(`path is outside notebook: ${target}`);
-	}
-	if (rel.split(sep).includes("..")) {
-		throw new ValidationError(`path traverses outside notebook: ${target}`);
-	}
+	assertInsideNotebook(resolvedRoot, resolvedTarget, target);
 	return resolvedTarget;
+}
+
+/**
+ * Resolve a not-yet-created path under the notebook without allowing an
+ * existing symlinked parent to redirect creation outside the notebook.
+ */
+export function resolveCreatableNotebookPath(notebookRoot: string, target: string, options: ResolvePathOptions = {}): string {
+	if (typeof target !== "string" || !target.trim()) {
+		throw new ValidationError("path is empty");
+	}
+	if (CONTROL_CHARS.test(target)) throw new ValidationError("path contains control characters");
+
+	const real = options.realpath ?? ((p) => realpathSync(p));
+	const resolvedRoot = realNotebookRoot(notebookRoot, real);
+	const lexicalTarget = resolve(isAbsolute(target) ? target : resolve(resolvedRoot, target));
+	assertInsideNotebook(resolvedRoot, lexicalTarget, target);
+
+	const missing: string[] = [];
+	let existing = lexicalTarget;
+	let resolvedExisting: string | undefined;
+	for (;;) {
+		try {
+			resolvedExisting = real(existing);
+			break;
+		} catch {
+			const parent = dirname(existing);
+			if (parent === existing) throw new ValidationError(`path is outside notebook: ${target}`);
+			missing.unshift(basename(existing));
+			existing = parent;
+		}
+	}
+
+	assertInsideNotebook(resolvedRoot, resolvedExisting, target, true);
+	return resolve(resolvedExisting, ...missing);
 }

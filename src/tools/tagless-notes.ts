@@ -21,7 +21,7 @@ export type TaglessNotesArgs = Static<typeof TaglessNotesParams>;
 export function buildTaglessNotesArgs(params: TaglessNotesArgs): string[] {
 	const limit = Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 	const offset = Math.max(params.offset ?? 0, 0);
-	const fetchLimit = Math.min(limit + offset, MAX_LIMIT);
+	const fetchLimit = limit + offset + 1;
 	return ["list", "--quiet", "--no-pager", "--tagless", "--sort", "modified-", "--format", NOTE_LIST_FORMAT, "--limit", String(fetchLimit)];
 }
 
@@ -50,7 +50,7 @@ export function registerTaglessNotesTool(pi: ExtensionAPI): void {
 				const limit = Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 				const offset = Math.max(params.offset ?? 0, 0);
 				const sliced = allNotes.slice(offset, offset + limit);
-				const hasMore = allNotes.length > offset + sliced.length;
+				const hasMore = allNotes.length > offset + limit;
 
 				const text = renderNoteListText(sliced, sliced.length);
 				const formatted = await formatTextOutput({ text, prefix: "pi-zk-tagless-" });

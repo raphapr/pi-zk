@@ -28,7 +28,7 @@ test("buildLinkGraphArgs emits format and link flag for --link-to", () => {
 		"journal/a.md",
 	]);
 	assert.equal(args[args.indexOf("--sort") + 1], "modified-");
-	assert.equal(args[args.indexOf("--limit") + 1], "50");
+	assert.equal(args[args.indexOf("--limit") + 1], "51");
 });
 
 test("buildLinkGraphArgs swaps the flag for --linked-by", () => {
@@ -55,15 +55,15 @@ test("buildLinkGraphArgs ignores recursive options for --related", () => {
 	assert.equal(args.includes("--max-distance"), false);
 });
 
-test("buildLinkGraphArgs honors custom sort and limit", () => {
+test("buildLinkGraphArgs honors custom sort and fetches one extra row", () => {
 	const args = buildLinkGraphArgs(linkTo, { path: "a.md", sort: "title", limit: 10 });
 	assert.equal(args[args.indexOf("--sort") + 1], "title");
-	assert.equal(args[args.indexOf("--limit") + 1], "10");
+	assert.equal(args[args.indexOf("--limit") + 1], "11");
 });
 
-test("buildLinkGraphArgs fetches limit+offset and clamps to max", () => {
+test("buildLinkGraphArgs fetches offset + limit + one extra row", () => {
 	const args = buildLinkGraphArgs(linkTo, { path: "a.md", limit: 150, offset: 100 });
-	assert.equal(args[args.indexOf("--limit") + 1], "200");
+	assert.equal(args[args.indexOf("--limit") + 1], "251");
 });
 
 test("buildLinkGraphArgs ignores zero or negative max-distance", () => {

@@ -77,7 +77,7 @@ export function buildTagSelector(args: {
 export function buildSearchNotesArgs(params: SearchNotesArgs): string[] {
 	const limit = Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 	const offset = Math.max(params.offset ?? 0, 0);
-	const fetchLimit = Math.min(limit + offset, MAX_LIMIT);
+	const fetchLimit = limit + offset + 1;
 
 	const args: string[] = ["list", "--quiet", "--no-pager", "--format", NOTE_LIST_FORMAT];
 
@@ -142,7 +142,7 @@ export function registerSearchNotesTool(pi: ExtensionAPI): void {
 				const limit = Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 				const offset = Math.max(params.offset ?? 0, 0);
 				const sliced = allNotes.slice(offset, offset + limit);
-				const hasMore = allNotes.length > offset + sliced.length;
+				const hasMore = allNotes.length > offset + limit;
 
 				const visibleText = renderNoteListText(sliced, sliced.length);
 				const formatted = await formatTextOutput({ text: visibleText, prefix: "pi-zk-search-" });

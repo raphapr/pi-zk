@@ -30,17 +30,17 @@ test("buildLastModifiedArgs ignores whitespace-only tag", () => {
 	assert.equal(args.indexOf("--tag"), -1);
 });
 
-test("buildTaglessNotesArgs sets --tagless and default limit", () => {
+test("buildTaglessNotesArgs sets --tagless and fetches one extra row", () => {
 	const args = buildTaglessNotesArgs({});
 	assert.ok(args.includes("--tagless"));
 	const limitIdx = args.indexOf("--limit");
-	assert.equal(args[limitIdx + 1], "50");
+	assert.equal(args[limitIdx + 1], "51");
 });
 
-test("buildTaglessNotesArgs respects custom limit and offset (fetched together)", () => {
+test("buildTaglessNotesArgs fetches offset + limit + one extra row", () => {
 	const args = buildTaglessNotesArgs({ limit: 20, offset: 30 });
 	const limitIdx = args.indexOf("--limit");
-	assert.equal(args[limitIdx + 1], "50");
+	assert.equal(args[limitIdx + 1], "51");
 });
 
 test("buildRandomNoteArgs sorts random with limit 1", () => {
