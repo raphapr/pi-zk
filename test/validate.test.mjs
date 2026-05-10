@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
 	validateTitle,
 	validateRelativeDirectory,
+	validateNoteRef,
 	resolveNotebookPath,
 	ValidationError,
 } from "../src/zk/validate.ts";
@@ -84,6 +85,36 @@ test("resolveNotebookPath falls back when the target does not exist", () => {
 test("resolveNotebookPath rejects empty input", () => {
 	const realpath = (p) => p;
 	assert.throws(() => resolveNotebookPath("/notes", "", { realpath }), ValidationError);
+});
+
+test("validateNoteRef accepts a partial path", () => {
+	assert.equal(validateNoteRef("journal/2026-05-09.md"), "journal/2026-05-09.md");
+});
+
+test("validateNoteRef accepts a bare note ID", () => {
+	assert.equal(validateNoteRef("200911172034"), "200911172034");
+});
+
+test("validateNoteRef trims whitespace", () => {
+	assert.equal(validateNoteRef("  inbox/a.md  "), "inbox/a.md");
+});
+
+test("validateNoteRef rejects empty input", () => {
+	assert.throws(() => validateNoteRef(""), ValidationError);
+	assert.throws(() => validateNoteRef("   "), ValidationError);
+});
+
+test("validateNoteRef rejects absolute paths", () => {
+	assert.throws(() => validateNoteRef("/notes/a.md"), ValidationError);
+});
+
+test("validateNoteRef rejects traversal segments", () => {
+	assert.throws(() => validateNoteRef("../escape.md"), ValidationError);
+	assert.throws(() => validateNoteRef("a/../b.md"), ValidationError);
+});
+
+test("validateNoteRef rejects control characters", () => {
+	assert.throws(() => validateNoteRef("bad\x07path.md"), ValidationError);
 });
 
 test("resolveNotebookPath rejects control characters", () => {

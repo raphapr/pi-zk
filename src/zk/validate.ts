@@ -27,6 +27,24 @@ export function validateTitle(title: string): string {
 	return trimmed;
 }
 
+/**
+ * Validate a notebook-relative note reference. Accepts partial paths and
+ * bare note IDs (e.g. `200911172034`) because zk matches on path prefixes.
+ * Does not touch the filesystem.
+ */
+export function validateNoteRef(ref: string): string {
+	if (typeof ref !== "string") throw new ValidationError("path must be a string");
+	const trimmed = ref.trim();
+	if (!trimmed) throw new ValidationError("path is empty");
+	if (CONTROL_CHARS.test(trimmed)) throw new ValidationError("path contains control characters");
+	if (isAbsolute(trimmed)) throw new ValidationError("path must be notebook-relative");
+	const segments = trimmed.split(/[\\/]+/).filter((segment) => segment.length > 0);
+	if (segments.some((segment) => segment === "..")) {
+		throw new ValidationError("path must not traverse upwards (..)");
+	}
+	return trimmed;
+}
+
 export function validateRelativeDirectory(dir: string): string {
 	if (typeof dir !== "string") throw new ValidationError("directory must be a string");
 	if (!dir.trim()) throw new ValidationError("directory is empty");
