@@ -17,10 +17,12 @@
   "pi": {
     "extensions": [
       "./src/index.ts"
-    ]
+    ],
+    "image": "https://raw.githubusercontent.com/raphapr/pi-zk/main/assets/pi-zk-gallery.png"
   },
   "files": [
     "src/",
+    "assets/",
     "README.md",
     "LICENSE",
     "tsconfig.json"

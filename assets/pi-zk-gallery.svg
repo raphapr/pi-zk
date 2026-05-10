@@ -1,0 +1,70 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="0.55" stop-color="#172554"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#020617" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1010" cy="120" r="230" fill="#22d3ee" fill-opacity="0.16"/>
+  <circle cx="180" cy="560" r="260" fill="#a7f3d0" fill-opacity="0.13"/>
+
+  <g opacity="0.3" stroke="#bae6fd" stroke-width="2">
+    <path d="M728 182C786 126 868 128 924 188"/>
+    <path d="M716 296C798 348 890 340 962 276"/>
+    <path d="M758 438C842 476 932 450 984 382"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="76" width="520" height="478" rx="28" fill="url(#card)" stroke="#e0f2fe" stroke-opacity="0.6" stroke-width="1.5"/>
+    <text x="340" y="203" text-anchor="middle" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="86" font-weight="800" letter-spacing="-4">pi-zk</text>
+    <text x="340" y="265" text-anchor="middle" fill="#bfdbfe" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="30" font-weight="600">Zettelkasten tools for Pi</text>
+    <text x="340" y="335" text-anchor="middle" fill="#e0f2fe" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24">Search notes, read backlinks, edit safely,</text>
+    <text x="340" y="373" text-anchor="middle" fill="#e0f2fe" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24">and complete wikilinks from your notebook.</text>
+
+    <g transform="translate(119 443)">
+      <rect width="128" height="44" rx="22" fill="#67e8f9" fill-opacity="0.18" stroke="#67e8f9" stroke-opacity="0.55"/>
+      <text x="24" y="29" fill="#cffafe" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">zk tools</text>
+      <rect x="148" width="150" height="44" rx="22" fill="#a7f3d0" fill-opacity="0.18" stroke="#a7f3d0" stroke-opacity="0.55"/>
+      <text x="172" y="29" fill="#d1fae5" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">wikilinks</text>
+      <rect x="318" width="124" height="44" rx="22" fill="#bfdbfe" fill-opacity="0.18" stroke="#bfdbfe" stroke-opacity="0.55"/>
+      <text x="342" y="29" fill="#dbeafe" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="700">notes</text>
+    </g>
+  </g>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(700 122)">
+      <rect width="330" height="150" rx="28" fill="#f8fafc" fill-opacity="0.96" stroke="#1e293b" stroke-opacity="0.18" stroke-width="1.5"/>
+      <rect x="30" y="30" width="148" height="18" rx="9" fill="#0f766e" fill-opacity="0.9"/>
+      <rect x="30" y="68" width="250" height="14" rx="7" fill="#334155" fill-opacity="0.35"/>
+      <rect x="30" y="98" width="206" height="14" rx="7" fill="#334155" fill-opacity="0.25"/>
+      <circle cx="286" cy="44" r="18" fill="#22c55e" fill-opacity="0.18"/>
+      <path d="M278 44L284 50L296 36" stroke="#15803d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <g transform="translate(632 308)">
+      <rect width="330" height="150" rx="28" fill="#f8fafc" fill-opacity="0.93" stroke="#1e293b" stroke-opacity="0.18" stroke-width="1.5"/>
+      <rect x="30" y="30" width="184" height="18" rx="9" fill="#1d4ed8" fill-opacity="0.9"/>
+      <rect x="30" y="68" width="248" height="14" rx="7" fill="#334155" fill-opacity="0.35"/>
+      <rect x="30" y="98" width="168" height="14" rx="7" fill="#334155" fill-opacity="0.25"/>
+      <text x="238" y="112" fill="#0f766e" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="30" font-weight="800">[[</text>
+    </g>
+
+    <g transform="translate(832 402)">
+      <rect width="260" height="120" rx="26" fill="#f8fafc" fill-opacity="0.9" stroke="#1e293b" stroke-opacity="0.18" stroke-width="1.5"/>
+      <rect x="28" y="28" width="124" height="16" rx="8" fill="#0e7490" fill-opacity="0.9"/>
+      <rect x="28" y="62" width="194" height="12" rx="6" fill="#334155" fill-opacity="0.32"/>
+      <rect x="28" y="88" width="142" height="12" rx="6" fill="#334155" fill-opacity="0.22"/>
+    </g>
+  </g>
+
+</svg>
