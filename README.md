@@ -28,20 +28,20 @@ Requirements:
 
 ## Tools
 
-| Tool | Purpose |
-|---|---|
-| `zk_search_notes` | Filter notes by FTS query, tags (AND/OR/NOT), paths, and date ranges |
-| `zk_read_note` | Read a note's full content by notebook-relative path |
-| `zk_create_note` | `zk new` wrapper; auto-creates nested directories and can prepopulate content |
-| `zk_edit_note` | Exact-match text replacement with uniqueness enforcement |
-| `zk_append_note` | Append a markdown block with blank-line normalisation |
-| `zk_list_tags` | List every tag with note counts |
-| `zk_link_to` | Backlinks for a note (supports recursive traversal + max-distance) |
-| `zk_linked_by` | Notes a given note points to (supports recursive traversal) |
-| `zk_related` | Notes that share neighbours but are not yet linked |
-| `zk_last_modified` | Most recently edited note, optionally tag-filtered |
-| `zk_tagless_notes` | Notes with no tags (useful for triage) |
-| `zk_random_note` | One random note, optionally tag-filtered |
+| Tool               | Purpose                                                                       |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `zk_search_notes`  | Filter notes by FTS query, tags (AND/OR/NOT), paths, and date ranges          |
+| `zk_read_note`     | Read a note's full content by notebook-relative path                          |
+| `zk_create_note`   | `zk new` wrapper; auto-creates nested directories and can prepopulate content |
+| `zk_edit_note`     | Exact-match text replacement with uniqueness enforcement                      |
+| `zk_append_note`   | Append a markdown block with blank-line normalisation                         |
+| `zk_list_tags`     | List every tag with note counts                                               |
+| `zk_link_to`       | Backlinks for a note (supports recursive traversal + max-distance)            |
+| `zk_linked_by`     | Notes a given note points to (supports recursive traversal)                   |
+| `zk_related`       | Notes that share neighbours but are not yet linked                            |
+| `zk_last_modified` | Most recently edited note, optionally tag-filtered                            |
+| `zk_tagless_notes` | Notes with no tags (useful for triage)                                        |
+| `zk_random_note`   | One random note, optionally tag-filtered                                      |
 
 All tools accept an optional `notebook` parameter that overrides env-based resolution for a single call.
 
@@ -100,15 +100,6 @@ Load the extension without publishing:
 ```bash
 pi -e /path/to/pi-zk/src/index.ts
 ```
-
-## Roadmap
-
-Not in v1 (may land later):
-
-- `/zk-daily` and `/zk-weekly` slash commands for daily-to-weekly workflow automation
-- A "today's note" status widget
-- Live note watcher (currently relies on TTL + invalidation)
-- Custom wikilink formats beyond filename stem
 
 ## License
 
