@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { registerCreateNoteTool } from "./tools/create-note.js";
 import { registerLastModifiedTool } from "./tools/last-modified.js";
 import { registerLinkedByTool, registerLinkToTool, registerRelatedTool } from "./tools/link-graph.js";
 import { registerListTagsTool } from "./tools/list-tags.js";
@@ -17,4 +18,5 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 	registerLinkToTool(pi);
 	registerLinkedByTool(pi);
 	registerRelatedTool(pi);
+	registerCreateNoteTool(pi);
 }
