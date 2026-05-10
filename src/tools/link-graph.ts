@@ -150,12 +150,15 @@ function registerLinkGraphTool(pi: ExtensionAPI, spec: LinkGraphSpec): void {
 				const details = result.details as LinkGraphDetails | undefined;
 				if (!details) return renderToolResultText(theme, { status: "done" }, expanded);
 				const more = details.hasMore ? ", more available" : "";
-				const status = `${details.notes.length} note${details.notes.length === 1 ? "" : "s"}${more}`;
+				const tone = details.notes.length === 0 ? "empty" : "ok";
+				const status = details.notes.length === 0
+					? "no related notes"
+					: `${details.notes.length} note${details.notes.length === 1 ? "" : "s"}${more}`;
 				const body = details.notes
 					.slice(0, expanded ? 20 : 5)
 					.map((n) => `${n.path}\t${n.title}`)
 					.join("\n");
-				return renderToolResultText(theme, { status, body }, expanded);
+				return renderToolResultText(theme, { status, body, tone }, expanded);
 			},
 		}),
 	);

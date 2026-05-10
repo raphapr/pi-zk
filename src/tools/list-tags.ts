@@ -47,12 +47,15 @@ export function registerListTagsTool(pi: ExtensionAPI): void {
 			renderResult(result, { expanded }, theme) {
 				const details = result.details as ListTagsDetails | undefined;
 				if (!details) return renderToolResultText(theme, { status: "done" }, expanded);
-				const status = `${details.tags.length} tag${details.tags.length === 1 ? "" : "s"}`;
+				const tone = details.tags.length === 0 ? "empty" : "ok";
+				const status = details.tags.length === 0
+					? "no tags"
+					: `${details.tags.length} tag${details.tags.length === 1 ? "" : "s"}`;
 				const body = details.tags
 					.slice(0, expanded ? 25 : 5)
 					.map((t) => `${t.name} (${t.count})`)
 					.join("\n");
-				return renderToolResultText(theme, { status, body }, expanded);
+				return renderToolResultText(theme, { status, body, tone }, expanded);
 			},
 		}),
 	);

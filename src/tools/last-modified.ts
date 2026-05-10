@@ -52,7 +52,7 @@ export function registerLastModifiedTool(pi: ExtensionAPI): void {
 			},
 			renderResult(result, { expanded }, theme) {
 				const details = result.details as LastModifiedDetails | undefined;
-				if (!details?.note) return renderToolResultText(theme, { status: "no notes" }, expanded);
+				if (!details?.note) return renderToolResultText(theme, { status: "no notes", tone: "empty" }, expanded);
 				return renderToolResultText(theme, { status: `${details.note.path}\t${details.note.title}` }, expanded);
 			},
 		}),

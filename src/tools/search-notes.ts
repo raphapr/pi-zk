@@ -171,12 +171,15 @@ export function registerSearchNotesTool(pi: ExtensionAPI): void {
 				const details = result.details as SearchNotesDetails | undefined;
 				if (!details) return renderToolResultText(theme, { status: "done" }, expanded);
 				const more = details.hasMore ? ", more available" : "";
-				const status = `${details.total} note${details.total === 1 ? "" : "s"}${more}`;
+				const tone = details.total === 0 ? "empty" : "ok";
+				const status = details.total === 0
+					? "no notes matched"
+					: `${details.total} note${details.total === 1 ? "" : "s"}${more}`;
 				const body = details.notes
 					.slice(0, expanded ? 20 : 5)
 					.map((n) => `${n.path}\t${n.title}`)
 					.join("\n");
-				return renderToolResultText(theme, { status, body }, expanded);
+				return renderToolResultText(theme, { status, body, tone }, expanded);
 			},
 		}),
 	);

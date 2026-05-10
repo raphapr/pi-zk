@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { defineTool, type ExtensionAPI, withFileMutationQueue } from "@earendil-works/pi-coding-agent";
+import { Text } from "@earendil-works/pi-tui";
 import { Type, type Static } from "typebox";
 import { applyEdits } from "../zk/edits.js";
 import { resolveActiveNotebook } from "../zk/notebook.js";
@@ -77,8 +78,14 @@ export function registerEditNoteTool(pi: ExtensionAPI): void {
 			renderResult(result, { expanded }, theme) {
 				const details = result.details as EditNoteDetails | undefined;
 				if (!details) return renderToolResultText(theme, { status: "edited" }, expanded);
-				const status = `${details.editsApplied} edit${details.editsApplied === 1 ? "" : "s"} → ${details.path}`;
-				return renderToolResultText(theme, { status }, expanded);
+				const delta = details.bytesAfter - details.bytesBefore;
+				const sign = delta > 0 ? "+" : "";
+				const diffColor = delta > 0 ? "toolDiffAdded" : delta < 0 ? "toolDiffRemoved" : "toolDiffContext";
+				const editLabel = `${details.editsApplied} edit${details.editsApplied === 1 ? "" : "s"}`;
+				const byteLabel = theme.fg(diffColor, `${sign}${delta}B`);
+				const pathLabel = theme.fg("toolOutput", details.path);
+				const line = `${theme.fg("success", editLabel)} ${byteLabel} → ${pathLabel}`;
+				return new Text(line, 0, 0);
 			},
 		}),
 	);
