@@ -11,7 +11,8 @@ import { registerReadNoteTool } from "./tools/read-note.js";
 import { registerSearchNotesTool } from "./tools/search-notes.js";
 import { registerTaglessNotesTool } from "./tools/tagless-notes.js";
 import { runZk } from "./zk/client.js";
-import { resolveNotebook } from "./zk/config.js";
+import { resolveNotebook, type NotebookResolution } from "./zk/config.js";
+import { buildZkGuidance } from "./zk/guidance.js";
 import { NoteCache } from "./zk/note-cache.js";
 import { withNotebookFlag } from "./zk/notebook.js";
 import { NOTE_LIST_FORMAT, parseNoteList } from "./zk/parsers.js";
@@ -35,6 +36,7 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 	// Per-notebook note caches. Shared across sessions in the same Pi process so
 	// `/reload` and session forks reuse the warm cache.
 	const cachesByNotebook = new Map<string, NoteCache>();
+	let activeNotebook: NotebookResolution | undefined;
 
 	function getOrCreateCache(notebookPath: string, cwd: string): NoteCache {
 		const existing = cachesByNotebook.get(notebookPath);
@@ -61,18 +63,25 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 	}
 
 	pi.on("session_start", async (_event, ctx) => {
-		let notebook;
+		let notebook: NotebookResolution;
 		try {
 			notebook = resolveNotebook({ cwd: ctx.cwd });
 		} catch {
-			// No notebook in scope - skip wikilink autocomplete silently.
+			// No notebook in scope - skip wikilink autocomplete and guidance silently.
+			activeNotebook = undefined;
 			return;
 		}
+		activeNotebook = notebook;
 		const cache = getOrCreateCache(notebook.path, ctx.cwd);
 		void cache.get(); // warm in background
 		ctx.ui.addAutocompleteProvider((current) =>
 			createWikilinkAutocompleteProvider(current, () => cache.get()),
 		);
+	});
+
+	pi.on("before_agent_start", (event) => {
+		if (!activeNotebook) return undefined;
+		return { systemPrompt: `${event.systemPrompt}\n\n${buildZkGuidance(activeNotebook)}` };
 	});
 
 	pi.on("tool_result", (event) => {
