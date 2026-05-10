@@ -1,0 +1,82 @@
+import { realpathSync } from "node:fs";
+import { isAbsolute, relative, resolve, sep } from "node:path";
+
+export class ValidationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "ValidationError";
+	}
+}
+
+const CONTROL_CHARS = /[\x00-\x1f\x7f]/;
+const MAX_TITLE_LENGTH = 200;
+
+export function validateTitle(title: string): string {
+	if (typeof title !== "string") throw new ValidationError("title must be a string");
+	const trimmed = title.trim();
+	if (!trimmed) throw new ValidationError("title is empty");
+	if (trimmed.length > MAX_TITLE_LENGTH) {
+		throw new ValidationError(`title exceeds ${MAX_TITLE_LENGTH} characters`);
+	}
+	if (CONTROL_CHARS.test(trimmed)) {
+		throw new ValidationError("title contains control characters");
+	}
+	if (trimmed.includes("/") || trimmed.includes("\\")) {
+		throw new ValidationError("title must not contain path separators");
+	}
+	return trimmed;
+}
+
+export function validateRelativeDirectory(dir: string): string {
+	if (typeof dir !== "string") throw new ValidationError("directory must be a string");
+	if (!dir.trim()) throw new ValidationError("directory is empty");
+	if (CONTROL_CHARS.test(dir)) throw new ValidationError("directory contains control characters");
+	if (isAbsolute(dir)) throw new ValidationError("directory must be relative");
+	const segments = dir.split(/[\\/]+/).filter((segment) => segment.length > 0);
+	if (segments.some((segment) => segment === "..")) {
+		throw new ValidationError("directory must not traverse upwards (..)");
+	}
+	return segments.join("/");
+}
+
+export interface ResolvePathOptions {
+	realpath?: (path: string) => string;
+}
+
+/**
+ * Resolve `target` against `notebookRoot` and confirm the result stays inside
+ * the notebook. Follows symlinks via `realpath` when available so that links
+ * pointing outside the notebook are rejected.
+ */
+export function resolveNotebookPath(notebookRoot: string, target: string, options: ResolvePathOptions = {}): string {
+	if (typeof target !== "string" || !target.trim()) {
+		throw new ValidationError("path is empty");
+	}
+	if (CONTROL_CHARS.test(target)) throw new ValidationError("path contains control characters");
+
+	const real = options.realpath ?? ((p) => realpathSync(p));
+	let resolvedRoot: string;
+	try {
+		resolvedRoot = real(notebookRoot);
+	} catch {
+		resolvedRoot = resolve(notebookRoot);
+	}
+
+	const absoluteTarget = isAbsolute(target) ? target : resolve(resolvedRoot, target);
+	let resolvedTarget: string;
+	try {
+		resolvedTarget = real(absoluteTarget);
+	} catch {
+		// Path may not exist yet (e.g. `zk new` not run). Fall back to lexical resolution.
+		resolvedTarget = resolve(absoluteTarget);
+	}
+
+	const rel = relative(resolvedRoot, resolvedTarget);
+	if (!rel || rel.startsWith("..") || (isAbsolute(rel) && rel !== resolvedTarget)) {
+		throw new ValidationError(`path is outside notebook: ${target}`);
+	}
+	if (rel.split(sep).includes("..")) {
+		throw new ValidationError(`path traverses outside notebook: ${target}`);
+	}
+	return resolvedTarget;
+}
