@@ -95,7 +95,7 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 					buildCreateNoteArgs({ title, directory, template: params.template }),
 				);
 				const result = await runZk({
-					cwd: ctx.cwd,
+					cwd: notebook.path,
 					args,
 					signal,
 					timeoutMs: 15_000,
@@ -150,8 +150,11 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 				return renderToolCall(theme, "zk_create_note", summary);
 			},
 			renderResult(result, { expanded }, theme) {
-				const details = result.details as CreateNoteDetails | undefined;
-				if (!details) return renderToolResultText(theme, { status: "created" }, expanded);
+				const details = result.details as Partial<CreateNoteDetails> | undefined;
+				if (!details || typeof details.path !== "string") {
+					const text = result.content.find((item) => item.type === "text")?.text?.trim();
+					return renderToolResultText(theme, { status: text || "failed to create note", tone: "error" }, expanded);
+				}
 				const status = `→ ${details.path}`;
 				const body = details.contentAppended ? `Appended ${details.contentAppended} bytes` : undefined;
 				return renderToolResultText(theme, { status, body }, expanded);

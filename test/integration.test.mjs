@@ -155,6 +155,27 @@ maybe("zk_create_note auto-creates nested directories and appends content", asyn
 	}
 });
 
+maybe("zk_create_note creates in the notebook when Pi cwd is outside the notebook", async () => {
+	const notebook = await makeNotebook();
+	const outsideCwd = await mkdtemp(join(tmpdir(), "pi-zk-cwd-"));
+	try {
+		const tool = captureTool(registerCreateNoteTool);
+		const result = await tool.execute(
+			"create-from-outside-cwd",
+			{ title: "Outside cwd", notebook },
+			undefined,
+			undefined,
+			{ cwd: outsideCwd },
+		);
+		assert.match(result.details.path, /outside-cwd\.md$/);
+		const body = await readFile(result.details.absolutePath, "utf8");
+		assert.match(body, /Outside cwd/);
+	} finally {
+		await rm(notebook, { recursive: true, force: true });
+		await rm(outsideCwd, { recursive: true, force: true });
+	}
+});
+
 maybe("zk_create_note rejects symlinked target directories before creating outside the notebook", async () => {
 	const notebook = await makeNotebook();
 	const outside = await mkdtemp(join(tmpdir(), "pi-zk-escape-"));

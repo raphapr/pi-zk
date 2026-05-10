@@ -24,7 +24,6 @@ Requirements:
 
 - [`zk`](https://github.com/zk-org/zk) **0.15** or newer on `PATH`
 - An initialised zk notebook (`zk init` in your notes directory)
-- Node 22.14+ (Pi already requires this)
 
 ## Tools
 
@@ -80,13 +79,6 @@ Other env vars:
 - `ZK_BIN` — explicit path to the `zk` binary (defaults to `~/.local/bin/zk`, then `zk` on `PATH`)
 - `ZK_AUTOCOMPLETE_LIMIT` — number of recent notes indexed for wikilink autocomplete (default 500, maximum 5000)
 - `ZK_EDITOR`, `EDITOR`, `VISUAL` — forced to `true` during `zk_create_note` so non-interactive notes are created without launching your editor
-
-## Safety
-
-- Every path argument is resolved relative to the notebook root, follows symlinks via `realpath`, and is rejected if it escapes the notebook
-- Subprocess arguments are always passed as argv arrays (no shell interpolation)
-- Mutating tools (`zk_create_note`, `zk_edit_note`, `zk_append_note`) wrap reads and writes in `withFileMutationQueue` so concurrent calls on the same note serialize
-- `zk_edit_note` requires each `oldText` to occur exactly once after prior edits in the same call; ambiguous matches fail with the occurrence count so the LLM can extend its anchor
 
 ## Development
 
