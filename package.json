@@ -1,6 +1,6 @@
 {
   "name": "pi-zk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pi extension exposing the zk note-taking CLI as agent-native tools.",
   "type": "module",
   "license": "MIT",
