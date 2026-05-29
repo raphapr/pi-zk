@@ -35,6 +35,7 @@ export function registerLastModifiedTool(pi: ExtensionAPI): void {
 			promptSnippet: "zk_last_modified: Return the most recently edited note (optionally tag-filtered).",
 			promptGuidelines: [
 				"Use zk_last_modified when the user asks `what did I work on most recently` or wants to resume a note.",
+				"Read the returned note before summarizing, editing, or continuing it.",
 			],
 			async execute(_toolCallId, params: LastModifiedArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });

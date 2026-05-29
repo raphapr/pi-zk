@@ -41,7 +41,10 @@ export function registerTaglessNotesTool(pi: ExtensionAPI): void {
 			description: "List notes with no tags, newest first. Useful for triage and tag-grooming.",
 			parameters: TaglessNotesParams,
 			promptSnippet: "zk_tagless_notes: List notes with no tags. Useful for triage and tag-grooming.",
-			promptGuidelines: ["Use zk_tagless_notes when the user wants to find untagged notes or triage tag coverage."],
+			promptGuidelines: [
+				"Use zk_tagless_notes when the user wants to find untagged notes or triage tag coverage.",
+				"Read a tagless note before suggesting tags for it.",
+			],
 			async execute(_toolCallId, params: TaglessNotesArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
 				const args = withNotebookFlag(notebook.path, buildTaglessNotesArgs(params));

@@ -37,7 +37,8 @@ export function registerAppendNoteTool(pi: ExtensionAPI): void {
 			promptSnippet:
 				"zk_append_note: Append a markdown block to a note. Use for new bullets, sections, or log entries.",
 			promptGuidelines: [
-				"Use zk_append_note for daily-log style additions instead of zk_edit_note to keep diffs simple.",
+				"Use zk_append_note for daily logs, running notes, new bullets, or new sections.",
+				"Prefer zk_append_note over zk_edit_note when adding content at the end.",
 			],
 			async execute(_toolCallId, params: AppendNoteArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });

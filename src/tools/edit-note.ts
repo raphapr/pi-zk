@@ -41,9 +41,10 @@ export function registerEditNoteTool(pi: ExtensionAPI): void {
 			promptSnippet:
 				"zk_edit_note: Apply exact text replacements to a note. Use unique surrounding context for each oldText.",
 			promptGuidelines: [
+				"Read the note first, then use zk_edit_note only for exact replacements.",
 				"Prefer zk_edit_note over re-writing the entire note when you only need to change a few spots.",
 				"For each edit, include enough surrounding context that oldText matches exactly once.",
-				"To append content rather than replace inline, use zk_append_note.",
+				"Do not use zk_edit_note for simple appends; use zk_append_note instead.",
 			],
 			async execute(_toolCallId, params: EditNoteArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });

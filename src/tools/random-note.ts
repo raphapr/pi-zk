@@ -33,7 +33,10 @@ export function registerRandomNoteTool(pi: ExtensionAPI): void {
 			description: "Return one randomly selected note from the notebook (optionally tag-filtered).",
 			parameters: RandomNoteParams,
 			promptSnippet: "zk_random_note: Return one randomly selected note for serendipitous review.",
-			promptGuidelines: ["Use zk_random_note when the user asks for a random note or wants to be surprised."],
+			promptGuidelines: [
+				"Use zk_random_note when the user asks for a random note or wants to be surprised.",
+				"Read the returned note before reviewing or suggesting edits.",
+			],
 			async execute(_toolCallId, params: RandomNoteArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
 				const args = withNotebookFlag(notebook.path, buildRandomNoteArgs(params));

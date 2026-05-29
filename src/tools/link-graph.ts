@@ -171,7 +171,8 @@ export function registerLinkToTool(pi: ExtensionAPI): void {
 		description: "List notes whose body links to the given note (backlinks). Supports recursive graph traversal.",
 		promptSnippet: "zk_link_to: List backlinks - notes that link to the given note.",
 		promptGuidelines: [
-			"Use zk_link_to when the user asks `what links here` or wants to find references to a specific note.",
+			"Use zk_link_to when the user asks `what links here` or wants references to a specific note.",
+			"Read backlinking notes before summarizing their content or editing their wikilinks to the target.",
 		],
 		zkFlag: "--link-to",
 		supportsRecursive: true,
@@ -186,6 +187,7 @@ export function registerLinkedByTool(pi: ExtensionAPI): void {
 		promptSnippet: "zk_linked_by: List the notes a given note links out to.",
 		promptGuidelines: [
 			"Use zk_linked_by when the user asks `where does this note point` or wants to follow links forward.",
+			"Use zk_linked_by before editing links to inspect the note's current outbound links.",
 		],
 		zkFlag: "--linked-by",
 		supportsRecursive: true,
@@ -199,7 +201,8 @@ export function registerRelatedTool(pi: ExtensionAPI): void {
 		description: "List notes related to the given note (share linked neighbors but not yet connected). Surfaces candidate links.",
 		promptSnippet: "zk_related: Suggest notes related to the given one through shared neighbors.",
 		promptGuidelines: [
-			"Use zk_related to surface candidate links - notes sharing context that are not yet directly linked.",
+			"Use zk_related to surface candidate links from notes that share linked neighbors.",
+			"Treat related notes as suggestions; read or ask before adding links.",
 		],
 		zkFlag: "--related",
 		supportsRecursive: false,

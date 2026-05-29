@@ -13,11 +13,12 @@ export function buildZkGuidance(notebook: NotebookResolution): string {
 		"",
 		"Routing rules for this session:",
 		"- Prefer pi-zk tools over generic bash/edit/read when working with notes in the notebook.",
-		"- Use `zk_search_notes` before reading notes to discover candidate paths and titles.",
-		"- Use `zk_read_note` (notebook-relative paths) instead of the generic read tool for notes.",
-		"- Use `zk_create_note` instead of `write` so zk's filename/ID rules and templates apply.",
-		"- Use `zk_edit_note` for surgical text changes and `zk_append_note` for log-style additions.",
-		"- Use `zk_link_to`, `zk_linked_by`, and `zk_related` to navigate the link graph.",
+		"- Discovery: use `zk_search_notes` when the note path is unknown. Combine match, tags, paths, or date filters when the user provides them.",
+		"- Reading: use `zk_read_note` after search, tagless, last-modified, random, or link tools return candidate paths. Do not answer content questions from search results alone.",
+		"- Triage: use `zk_list_tags` for tag taxonomy, `zk_tagless_notes` for missing tags, `zk_last_modified` to resume recent work, and `zk_random_note` for serendipitous review.",
+		"- Links: use `zk_link_to` for backlinks, `zk_linked_by` for outbound links, and `zk_related` for candidate links. Verify references before editing wikilinks.",
+		"- Writing: use `zk_create_note` for new notes, `zk_append_note` for logs or additions, and `zk_edit_note` only for precise replacements.",
+		"- Before editing, read the target note and prefer the smallest safe change.",
 		"- Wikilink autocomplete is active: typing `[[partial` suggests existing notes by stem, title, or tag.",
 	].join("\n");
 }

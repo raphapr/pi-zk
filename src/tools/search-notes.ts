@@ -129,7 +129,9 @@ export function registerSearchNotesTool(pi: ExtensionAPI): void {
 			promptSnippet:
 				"zk_search_notes: Find notes in the active zk notebook by FTS query, tags, paths, or date filters.",
 			promptGuidelines: [
-				"Use zk_search_notes before reading notes to discover candidate paths.",
+				"Use zk_search_notes first when the target note path is unknown.",
+				"Combine match, tags, paths, or date filters when the user provides them.",
+				"Do not answer content questions from search results alone; read selected notes first.",
 				"Prefer zk_search_notes over running `zk list` via bash for note discovery.",
 			],
 			async execute(_toolCallId, params: SearchNotesArgs, signal, _onUpdate, ctx) {

@@ -75,7 +75,9 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 			promptSnippet:
 				"zk_create_note: Create a new note (optionally inside a subdirectory, with a template, and with a content body).",
 			promptGuidelines: [
+				"Search first when the user references existing content; skip search for clearly new notes.",
 				"Use zk_create_note instead of writing markdown files by hand so zk's filename/ID rules and templates apply.",
+				"Use directory and template only when the user provides them or the notebook convention is clear.",
 				"After creation, use zk_edit_note or zk_append_note for further changes rather than re-creating the file.",
 			],
 			async execute(_toolCallId, params: CreateNoteArgs, signal, _onUpdate, ctx) {

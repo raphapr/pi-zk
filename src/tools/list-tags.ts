@@ -30,7 +30,10 @@ export function registerListTagsTool(pi: ExtensionAPI): void {
 			description: "List every tag in the active zk notebook with note counts. Useful for triage and discovery.",
 			parameters: ListTagsParams,
 			promptSnippet: "zk_list_tags: List all tags in the active zk notebook with note counts.",
-			promptGuidelines: ["Use zk_list_tags when the user asks about tag taxonomy or wants to discover tags."],
+			promptGuidelines: [
+				"Use zk_list_tags when the user asks about tag taxonomy or wants to discover tags.",
+				"Use zk_list_tags before adding or normalizing tags so suggestions match existing vocabulary.",
+			],
 			async execute(_toolCallId, params: ListTagsArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
 				const args = withNotebookFlag(notebook.path, buildListTagsArgs());

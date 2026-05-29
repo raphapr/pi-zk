@@ -33,6 +33,8 @@ export function registerReadNoteTool(pi: ExtensionAPI): void {
 			promptSnippet: "zk_read_note: Read a single note's contents by notebook-relative path.",
 			promptGuidelines: [
 				"Use zk_read_note rather than the generic read tool when the file is a zk note, to keep paths notebook-scoped.",
+				"Use notebook-relative paths returned by search, tagless, last-modified, random, or link tools.",
+				"Read selected notes before answering content questions or editing note text.",
 			],
 			async execute(_toolCallId, params: ReadNoteArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
