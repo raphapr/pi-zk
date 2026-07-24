@@ -96,6 +96,8 @@ Load the extension without publishing:
 pi -e /path/to/pi-zk/src/index.ts
 ```
 
+The published entry is a bundled `dist/index.ts` built by `npm run build` (run automatically by `prepack`). Bundling `src/` into one file cuts Pi's startup module-load cost by ~75%. It is emitted as `.ts`, not `.js`, on purpose: Pi's jiti loader loads `.js` natively and pulls a duplicate `@earendil-works/*` framework copy (~950ms), while a `.ts` entry keeps jiti's framework aliasing. Keep the framework packages and `typebox` external, and do not switch the entry to `.js`.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
