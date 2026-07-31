@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runZk } from "../src/zk/client.ts";
 import { withNotebookFlag } from "../src/zk/notebook.ts";
-import { buildSearchNotesArgs } from "../src/tools/search-notes.ts";
+import { buildSearchNotesArgs, registerSearchNotesTool } from "../src/tools/search-notes.ts";
 import { buildListTagsArgs } from "../src/tools/list-tags.ts";
 import { buildCreateNoteArgs, registerCreateNoteTool } from "../src/tools/create-note.ts";
 import { registerEditNoteTool } from "../src/tools/edit-note.ts";
@@ -112,6 +112,38 @@ maybe("zk_search_notes round-trips through real zk list", async () => {
 	}
 });
 
+maybe("zk_search_notes scopes paths to the notebook when Pi cwd is outside", async () => {
+	const notebook = await makeNotebook();
+	const outsideCwd = await mkdtemp(join(tmpdir(), "pi-zk-search-cwd-"));
+	try {
+		mkdirSync(join(notebook, "areas", "daily"), { recursive: true });
+		mkdirSync(join(notebook, "areas", "weekly"), { recursive: true });
+		for (const [title, directory] of [["Daily note", "areas/daily"], ["Weekly note", "areas/weekly"]]) {
+			await runZk({
+				cwd: notebook,
+				args: withNotebookFlag(notebook, buildCreateNoteArgs({ title, directory })),
+				timeoutMs: 10_000,
+				env: { ...process.env, ZK_EDITOR: "true", EDITOR: "true", VISUAL: "true" },
+			});
+		}
+
+		const tool = captureTool(registerSearchNotesTool);
+		const result = await tool.execute(
+			"search-weekly",
+			{ paths: ["areas/weekly"], notebook },
+			undefined,
+			undefined,
+			{ cwd: outsideCwd },
+		);
+		assert.equal(result.details.notes.length, 1);
+		assert.match(result.details.notes[0].path, /^areas\/weekly\//);
+		assert.equal(result.details.notes[0].title, "Weekly note");
+	} finally {
+		await rm(notebook, { recursive: true, force: true });
+		await rm(outsideCwd, { recursive: true, force: true });
+	}
+});
+
 maybe("zk_create_note auto-creates nested directories and appends content", async () => {
 	const notebook = await makeNotebook();
 	let definition;
@@ -173,6 +205,48 @@ maybe("zk_create_note creates in the notebook when Pi cwd is outside the noteboo
 	} finally {
 		await rm(notebook, { recursive: true, force: true });
 		await rm(outsideCwd, { recursive: true, force: true });
+	}
+});
+
+maybe("zk_create_note supports a symlinked notebook root", async () => {
+	const notebook = await makeNotebook();
+	const aliasRoot = await mkdtemp(join(tmpdir(), "pi-zk-alias-"));
+	const alias = join(aliasRoot, "notebook");
+	try {
+		await symlink(notebook, alias, "dir");
+		const tool = captureTool(registerCreateNoteTool);
+		const result = await tool.execute(
+			"create-via-alias",
+			{ title: "Via alias", directory: "notes/nested", notebook: alias },
+			undefined,
+			undefined,
+			{ cwd: aliasRoot },
+		);
+		assert.match(result.details.path, /^notes\/nested\//);
+		assert.match(await readFile(result.details.absolutePath, "utf8"), /Via alias/);
+	} finally {
+		await rm(aliasRoot, { recursive: true, force: true });
+		await rm(notebook, { recursive: true, force: true });
+	}
+});
+
+maybe("zk_create_note replaces template output when requested", async () => {
+	const notebook = await makeNotebook();
+	try {
+		const tool = captureTool(registerCreateNoteTool);
+		const content = "---\ntitle: Exact\n---\n\n# Weekly Summary\n";
+		const result = await tool.execute(
+			"create-replace",
+			{ title: "Exact", content, content_mode: "replace", notebook },
+			undefined,
+			undefined,
+			{ cwd: notebook },
+		);
+		assert.equal(result.details.contentReplaced, Buffer.byteLength(content));
+		assert.equal(result.details.contentAppended, undefined);
+		assert.equal(await readFile(result.details.absolutePath, "utf8"), content);
+	} finally {
+		await rm(notebook, { recursive: true, force: true });
 	}
 });
 

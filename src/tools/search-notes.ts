@@ -6,6 +6,7 @@ import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
 import { NotebookOverride } from "../zk/schemas.js";
+import { validateNoteRef } from "../zk/validate.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
 const DEFAULT_LIMIT = 50;
@@ -102,7 +103,7 @@ export function buildSearchNotesArgs(params: SearchNotesArgs): string[] {
 
 	for (const path of params.paths ?? []) {
 		const trimmed = path.trim();
-		if (trimmed) args.push(trimmed);
+		if (trimmed) args.push(validateNoteRef(trimmed));
 	}
 
 	return args;
@@ -138,7 +139,7 @@ export function registerSearchNotesTool(pi: ExtensionAPI): void {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
 				const baseArgs = buildSearchNotesArgs(params);
 				const args = withNotebookFlag(notebook.path, baseArgs);
-				const result = await runZk({ cwd: ctx.cwd, args, signal, timeoutMs: 30_000 });
+				const result = await runZk({ cwd: notebook.path, args, signal, timeoutMs: 30_000 });
 				const allNotes = parseNoteList(result.stdout);
 
 				const limit = Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT);

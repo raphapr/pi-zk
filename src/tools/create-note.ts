@@ -1,5 +1,6 @@
-import { appendFile, mkdir } from "node:fs/promises";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { appendFile, mkdir, realpath, writeFile } from "node:fs/promises";
+import { isAbsolute, relative, resolve } from "node:path";
+import { StringEnum } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI, withFileMutationQueue } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import { runZk } from "../zk/client.js";
@@ -24,7 +25,12 @@ export const CreateNoteParams = Type.Object({
 	template: Type.Optional(Type.String({ description: "Name of the zk template to use." })),
 	content: Type.Optional(
 		Type.String({
-			description: "Optional markdown body appended after the template output. Useful for one-shot create + write.",
+			description: "Optional markdown content to append after or replace the template output.",
+		}),
+	),
+	content_mode: Type.Optional(
+		StringEnum(["append", "replace"] as const, {
+			description: "How to apply content: append after the template (default) or replace the template output.",
 		}),
 	),
 	notebook: NotebookOverride,
@@ -51,6 +57,7 @@ interface CreateNoteDetails {
 	template?: string;
 	directory?: string;
 	contentAppended?: number;
+	contentReplaced?: number;
 }
 
 /**
@@ -70,7 +77,7 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 		defineTool({
 			name: "zk_create_note",
 			label: "zk Create",
-			description: "Create a new zk note via `zk new`. Returns the notebook-relative path. Optionally appends content after the template body.",
+			description: "Create a new zk note via `zk new`. Returns the notebook-relative path. Content can append after or replace the template output.",
 			parameters: CreateNoteParams,
 			promptSnippet:
 				"zk_create_note: Create a new note (optionally inside a subdirectory, with a template, and with a content body).",
@@ -78,6 +85,7 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 				"Search first when the user references existing content; skip search for clearly new notes.",
 				"Use zk_create_note instead of writing markdown files by hand so zk's filename/ID rules and templates apply.",
 				"Use directory and template only when the user provides them or the notebook convention is clear.",
+				"Use zk_create_note content_mode=replace when supplied content must replace the generated template output.",
 				"After creation, use zk_edit_note or zk_append_note for further changes rather than re-creating the file.",
 			],
 			async execute(_toolCallId, params: CreateNoteArgs, signal, _onUpdate, ctx) {
@@ -88,7 +96,7 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 				// zk new fails when the target directory does not exist. Auto-create so
 				// users don't have to pre-mkdir for new sections of the notebook.
 				if (directory) {
-					const absDir = resolveCreatableNotebookPath(notebook.path, join(notebook.path, directory));
+					const absDir = resolveCreatableNotebookPath(notebook.path, directory);
 					await mkdir(absDir, { recursive: true });
 				}
 
@@ -112,15 +120,20 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 				const absolutePath = isAbsolute(printedPath)
 					? resolveNotebookPath(notebook.path, printedPath)
 					: resolveNotebookPath(notebook.path, resolve(notebook.path, printedPath));
-				const relativePath = relative(notebook.path, absolutePath);
+				const notebookRoot = await realpath(notebook.path).catch(() => resolve(notebook.path));
+				const relativePath = relative(notebookRoot, absolutePath);
 
 				let contentAppended: number | undefined;
-				if (params.content !== undefined && params.content.length > 0) {
-					const payload = params.content.endsWith("\n") ? params.content : `${params.content}\n`;
+				let contentReplaced: number | undefined;
+				if (params.content !== undefined && (params.content.length > 0 || params.content_mode === "replace")) {
+					const payload = params.content && !params.content.endsWith("\n") ? `${params.content}\n` : params.content;
+					const bytes = Buffer.byteLength(payload, "utf8");
 					await withFileMutationQueue(absolutePath, async () => {
-						await appendFile(absolutePath, payload, "utf8");
+						if (params.content_mode === "replace") await writeFile(absolutePath, payload, "utf8");
+						else await appendFile(absolutePath, payload, "utf8");
 					});
-					contentAppended = Buffer.byteLength(payload, "utf8");
+					if (params.content_mode === "replace") contentReplaced = bytes;
+					else contentAppended = bytes;
 				}
 
 				const details: CreateNoteDetails = {
@@ -131,6 +144,7 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 					template: params.template,
 					directory,
 					contentAppended,
+					contentReplaced,
 				};
 
 				const summary = [
@@ -138,7 +152,8 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 					`Title: ${title}`,
 					params.template ? `Template: ${params.template}` : undefined,
 					directory ? `Directory: ${directory}` : undefined,
-					contentAppended ? `Appended ${contentAppended} bytes of content.` : undefined,
+					contentAppended !== undefined ? `Appended ${contentAppended} bytes of content.` : undefined,
+					contentReplaced !== undefined ? `Replaced template output with ${contentReplaced} bytes of content.` : undefined,
 				]
 					.filter(Boolean)
 					.join("\n");
@@ -158,7 +173,11 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 					return renderToolResultText(theme, { status: text || "failed to create note", tone: "error" }, expanded);
 				}
 				const status = `→ ${details.path}`;
-				const body = details.contentAppended ? `Appended ${details.contentAppended} bytes` : undefined;
+				const body = details.contentReplaced !== undefined
+					? `Replaced with ${details.contentReplaced} bytes`
+					: details.contentAppended !== undefined
+						? `Appended ${details.contentAppended} bytes`
+						: undefined;
 				return renderToolResultText(theme, { status, body }, expanded);
 			},
 		}),

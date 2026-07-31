@@ -98,6 +98,11 @@ test("buildSearchNotesArgs appends positional paths last", () => {
 	assert.equal(args[args.length - 1], "inbox/");
 });
 
+test("buildSearchNotesArgs rejects paths outside the notebook", () => {
+	assert.throws(() => buildSearchNotesArgs({ paths: ["../outside"] }), /must not traverse upwards/);
+	assert.throws(() => buildSearchNotesArgs({ paths: ["/tmp/outside"] }), /must be notebook-relative/);
+});
+
 test("buildSearchNotesArgs honors custom sort", () => {
 	const args = buildSearchNotesArgs({ sort: "title" });
 	const idx = args.indexOf("--sort");
