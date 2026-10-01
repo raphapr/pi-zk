@@ -4,7 +4,7 @@ import { Type, type Static } from "typebox";
 import { resolveActiveNotebook } from "../zk/notebook.js";
 import { formatTextOutput } from "../zk/output.js";
 import { NotebookOverride, NoteRef } from "../zk/schemas.js";
-import { resolveNotebookPath, ValidationError } from "../zk/validate.js";
+import { resolveNotebookPath } from "../zk/validate.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
 export const ReadNoteParams = Type.Object({
@@ -38,16 +38,13 @@ export function registerReadNoteTool(pi: ExtensionAPI): void {
 			],
 			async execute(_toolCallId, params: ReadNoteArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
-				let absolutePath: string;
-				try {
-					absolutePath = resolveNotebookPath(notebook.path, params.path);
-				} catch (error) {
-					if (error instanceof ValidationError) throw error;
-					throw error;
-				}
+				const absolutePath = resolveNotebookPath(notebook.path, params.path);
 				if (signal?.aborted) throw new Error("read aborted");
 
-				const text = await readFile(absolutePath, "utf8");
+				const text = await readFile(absolutePath, "utf8").catch((error: NodeJS.ErrnoException) => {
+					if (error.code !== "ENOENT") throw error;
+					throw new Error(`Note not found: ${params.path}`);
+				});
 				const formatted = await formatTextOutput({ text, prefix: "pi-zk-read-" });
 
 				const details: ReadNoteDetails = {

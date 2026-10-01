@@ -1,5 +1,7 @@
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
-import { type NotebookResolution, type NotebookSource, resolveNotebook } from "./config.js";
+import { runZk, type RunZkOptions, type RunZkResult } from "./client.js";
+import { type NotebookResolution, resolveNotebook } from "./config.js";
 
 export interface ResolveActiveNotebookOptions {
 	cwd: string;
@@ -8,15 +10,28 @@ export interface ResolveActiveNotebookOptions {
 }
 
 /**
+ * Canonicalize a notebook root. zk resolves symlinks internally, so a
+ * symlinked root (e.g. `~/Cloud -> ~/Dropbox`) must be resolved here too or
+ * zk prints `../../Dropbox/...` paths relative to the unresolved cwd.
+ */
+function realRoot(path: string): string {
+	try {
+		return realpathSync(path);
+	} catch {
+		return path;
+	}
+}
+
+/**
  * Resolve the notebook for a single tool call. A per-call `override` always
- * wins over env-based detection.
+ * wins over env-based detection. The returned path is symlink-resolved.
  */
 export function resolveActiveNotebook(options: ResolveActiveNotebookOptions): NotebookResolution {
-	if (options.override?.trim()) {
-		const path = resolve(options.cwd, options.override.trim());
-		return { path, source: "env_zk_notebook_dir" as NotebookSource };
-	}
-	return resolveNotebook({ cwd: options.cwd, env: options.env });
+	const override = options.override?.trim();
+	const base: NotebookResolution = override
+		? { path: resolve(options.cwd, override), source: "override" }
+		: resolveNotebook({ cwd: options.cwd, env: options.env });
+	return { ...base, path: realRoot(base.path) };
 }
 
 /**
@@ -25,4 +40,16 @@ export function resolveActiveNotebook(options: ResolveActiveNotebookOptions): No
  */
 export function withNotebookFlag(notebookPath: string, args: string[]): string[] {
 	return ["--notebook-dir", notebookPath, ...args];
+}
+
+/**
+ * Run zk scoped to a notebook. cwd is the notebook root because zk prints
+ * `{{path}}` and resolves path arguments relative to cwd, not the notebook.
+ */
+export function runZkInNotebook(
+	notebookPath: string,
+	args: string[],
+	options: Omit<RunZkOptions, "cwd" | "args"> = {},
+): Promise<RunZkResult> {
+	return runZk({ ...options, cwd: notebookPath, args: withNotebookFlag(notebookPath, args) });
 }

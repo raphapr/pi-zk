@@ -21,6 +21,22 @@ export const EditNoteParams = Type.Object({
 
 export type EditNoteArgs = Static<typeof EditNoteParams>;
 
+/**
+ * Some models send `edits` as a JSON string instead of an array. Parse it
+ * before schema validation instead of failing the call.
+ */
+export function prepareEditNoteArguments(args: unknown): EditNoteArgs {
+	const raw = args as { edits?: unknown } | null;
+	if (raw && typeof raw.edits === "string") {
+		try {
+			return { ...raw, edits: JSON.parse(raw.edits) } as EditNoteArgs;
+		} catch {
+			// Leave as-is; schema validation reports the error.
+		}
+	}
+	return args as EditNoteArgs;
+}
+
 interface EditNoteDetails {
 	path: string;
 	absolutePath: string;
@@ -38,6 +54,7 @@ export function registerEditNoteTool(pi: ExtensionAPI): void {
 			description:
 				"Apply exact text-replacement edits to a zk note. Each oldText must match exactly once in the current content; provide surrounding context to anchor unique edits.",
 			parameters: EditNoteParams,
+			prepareArguments: prepareEditNoteArguments,
 			promptSnippet:
 				"zk_edit_note: Apply exact text replacements to a note. Use unique surrounding context for each oldText.",
 			promptGuidelines: [

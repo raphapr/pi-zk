@@ -202,7 +202,9 @@ export async function runZk(options: RunZkOptions): Promise<RunZkResult> {
 			bin,
 			args: options.args,
 			cwd: options.cwd,
-			env: buildZkEnv(options.env),
+			// zk (Go) trusts $PWD for getwd when it points at the same directory, so
+			// an inherited PWD of a symlinked alias skews printed relative paths.
+			env: { ...buildZkEnv(options.env), PWD: options.cwd },
 			signal: options.signal,
 			timeoutMs: options.timeoutMs,
 			input: options.input,

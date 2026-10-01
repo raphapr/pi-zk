@@ -1,8 +1,7 @@
 import { StringEnum } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
-import { runZk } from "../zk/client.js";
-import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
+import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
 import { NotebookOverride } from "../zk/schemas.js";
@@ -137,9 +136,7 @@ export function registerSearchNotesTool(pi: ExtensionAPI): void {
 			],
 			async execute(_toolCallId, params: SearchNotesArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
-				const baseArgs = buildSearchNotesArgs(params);
-				const args = withNotebookFlag(notebook.path, baseArgs);
-				const result = await runZk({ cwd: notebook.path, args, signal, timeoutMs: 30_000 });
+				const result = await runZkInNotebook(notebook.path, buildSearchNotesArgs(params), { signal, timeoutMs: 30_000 });
 				const allNotes = parseNoteList(result.stdout);
 
 				const limit = Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT);

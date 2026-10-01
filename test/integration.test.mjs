@@ -13,7 +13,9 @@ import { withNotebookFlag } from "../src/zk/notebook.ts";
 import { buildSearchNotesArgs, registerSearchNotesTool } from "../src/tools/search-notes.ts";
 import { buildListTagsArgs } from "../src/tools/list-tags.ts";
 import { buildCreateNoteArgs, registerCreateNoteTool } from "../src/tools/create-note.ts";
-import { registerEditNoteTool } from "../src/tools/edit-note.ts";
+import { prepareEditNoteArguments, registerEditNoteTool } from "../src/tools/edit-note.ts";
+import { registerLastModifiedTool } from "../src/tools/last-modified.ts";
+import { registerReadNoteTool } from "../src/tools/read-note.ts";
 import { registerAppendNoteTool } from "../src/tools/append-note.ts";
 import { parseNoteList, parseTagList } from "../src/zk/parsers.ts";
 
@@ -430,4 +432,67 @@ maybe("zk_list_tags surfaces tags created via #hashtag", async () => {
 	} finally {
 		await rm(notebook, { recursive: true, force: true });
 	}
+});
+
+maybe("list tools print notebook-relative paths via a symlinked root from an outside cwd", async () => {
+	const notebook = await makeNotebook();
+	const aliasRoot = await mkdtemp(join(tmpdir(), "pi-zk-alias-list-"));
+	const alias = join(aliasRoot, "notebook");
+	try {
+		await symlink(notebook, alias, "dir");
+		mkdirSync(join(notebook, "journal"));
+		await runZk({
+			cwd: notebook,
+			args: withNotebookFlag(notebook, buildCreateNoteArgs({ title: "Recent", directory: "journal" })),
+			timeoutMs: 10_000,
+			env: { ...process.env, ZK_EDITOR: "true", EDITOR: "true", VISUAL: "true" },
+		});
+		const tool = captureTool(registerLastModifiedTool);
+		const result = await tool.execute("last", { notebook: alias }, undefined, undefined, { cwd: aliasRoot });
+		assert.equal(result.details.note.path, "journal/recent.md");
+	} finally {
+		await rm(aliasRoot, { recursive: true, force: true });
+		await rm(notebook, { recursive: true, force: true });
+	}
+});
+
+maybe("zk_create_note replace mode skips rendering the template", async () => {
+	const notebook = await makeNotebook();
+	try {
+		// A template with a side effect proves whether zk rendered it.
+		const template = join(notebook, ".zk", "templates", "marker.md");
+		await writeFile(template, '{{sh "touch rendered"}}\n');
+		const tool = captureTool(registerCreateNoteTool);
+		await tool.execute(
+			"create-replace-fast",
+			{ title: "Fast", content: "body", content_mode: "replace", template, notebook },
+			undefined,
+			undefined,
+			{ cwd: notebook },
+		);
+		await assert.rejects(access(join(notebook, "rendered")));
+	} finally {
+		await rm(notebook, { recursive: true, force: true });
+	}
+});
+
+maybe("zk_read_note reports a missing note by its notebook path", async () => {
+	const notebook = await makeNotebook();
+	try {
+		const tool = captureTool(registerReadNoteTool);
+		await assert.rejects(
+			tool.execute("read-missing", { path: "journal/nope.md", notebook }, undefined, undefined, { cwd: notebook }),
+			/^Error: Note not found: journal\/nope\.md$/,
+		);
+	} finally {
+		await rm(notebook, { recursive: true, force: true });
+	}
+});
+
+test("prepareEditNoteArguments parses stringified edits", () => {
+	const edits = [{ oldText: "a", newText: "b" }];
+	assert.deepEqual(prepareEditNoteArguments({ path: "x.md", edits: JSON.stringify(edits) }), { path: "x.md", edits });
+	const passthrough = { path: "x.md", edits };
+	assert.equal(prepareEditNoteArguments(passthrough), passthrough);
+	assert.equal(prepareEditNoteArguments({ path: "x.md", edits: "not json" }).edits, "not json");
 });

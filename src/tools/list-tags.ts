@@ -1,7 +1,6 @@
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
-import { runZk } from "../zk/client.js";
-import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
+import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderTagListText } from "../zk/output.js";
 import { parseTagList, TAG_LIST_FORMAT, type Tag } from "../zk/parsers.js";
 import { NotebookOverride } from "../zk/schemas.js";
@@ -36,8 +35,7 @@ export function registerListTagsTool(pi: ExtensionAPI): void {
 			],
 			async execute(_toolCallId, params: ListTagsArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
-				const args = withNotebookFlag(notebook.path, buildListTagsArgs());
-				const result = await runZk({ cwd: ctx.cwd, args, signal, timeoutMs: 15_000 });
+				const result = await runZkInNotebook(notebook.path, buildListTagsArgs(), { signal, timeoutMs: 15_000 });
 				const tags = parseTagList(result.stdout).sort((a, b) => b.count - a.count);
 				const text = renderTagListText(tags);
 				const formatted = await formatTextOutput({ text, prefix: "pi-zk-tags-" });

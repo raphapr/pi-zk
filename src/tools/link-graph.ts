@@ -1,7 +1,6 @@
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
-import { runZk } from "../zk/client.js";
-import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
+import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
 import { NoteRef, NotebookOverride } from "../zk/schemas.js";
@@ -116,8 +115,10 @@ function registerLinkGraphTool(pi: ExtensionAPI, spec: LinkGraphSpec): void {
 				const args = params as LinkGraphArgs;
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: args.notebook });
 				const path = validateNoteRef(args.path);
-				const zkArgs = withNotebookFlag(notebook.path, buildLinkGraphArgs(spec, { ...args, path }));
-				const result = await runZk({ cwd: ctx.cwd, args: zkArgs, signal, timeoutMs: 30_000 });
+				const result = await runZkInNotebook(notebook.path, buildLinkGraphArgs(spec, { ...args, path }), {
+					signal,
+					timeoutMs: 30_000,
+				});
 				const allNotes = parseNoteList(result.stdout);
 
 				const limit = Math.min(args.limit ?? DEFAULT_LIMIT, MAX_LIMIT);

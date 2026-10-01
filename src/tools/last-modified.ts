@@ -1,7 +1,6 @@
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
-import { runZk } from "../zk/client.js";
-import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
+import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
 import { NotebookOverride } from "../zk/schemas.js";
@@ -39,8 +38,7 @@ export function registerLastModifiedTool(pi: ExtensionAPI): void {
 			],
 			async execute(_toolCallId, params: LastModifiedArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
-				const args = withNotebookFlag(notebook.path, buildLastModifiedArgs(params));
-				const result = await runZk({ cwd: ctx.cwd, args, signal, timeoutMs: 10_000 });
+				const result = await runZkInNotebook(notebook.path, buildLastModifiedArgs(params), { signal, timeoutMs: 10_000 });
 				const notes = parseNoteList(result.stdout);
 				const note = notes[0];
 				const text = note ? renderNoteListText([note], 1) : "No notes found.";

@@ -44,7 +44,7 @@ Requirements:
 
 All tools accept an optional `notebook` parameter that overrides env-based resolution for a single call.
 
-`zk_create_note` accepts `content_mode: "append" | "replace"`. The default keeps the generated template and appends `content`; `replace` overwrites the template output with `content` after `zk new` chooses the note path.
+`zk_create_note` accepts `content_mode: "append" | "replace"`. The default keeps the generated template and appends `content`; `replace` overwrites the template output with `content` after `zk new` chooses the note path. In `replace` mode the template is not rendered, so slow template helpers such as `{{sh ...}}` never run.
 
 ## Wikilink autocomplete
 

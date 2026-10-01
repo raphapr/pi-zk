@@ -9,6 +9,7 @@ test("resolveActiveNotebook uses override when provided", () => {
 		env: { ZK_NOTEBOOK_DIR: "/should/be/ignored" },
 	});
 	assert.equal(result.path, "/notes/zk");
+	assert.equal(result.source, "override");
 });
 
 test("resolveActiveNotebook resolves relative overrides against cwd", () => {

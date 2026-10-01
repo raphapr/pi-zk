@@ -1,10 +1,10 @@
-import { appendFile, mkdir, realpath, writeFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
+import { devNull } from "node:os";
+import { relative, resolve } from "node:path";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI, withFileMutationQueue } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
-import { runZk } from "../zk/client.js";
-import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
+import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { NotebookOverride } from "../zk/schemas.js";
 import {
 	resolveCreatableNotebookPath,
@@ -100,13 +100,11 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 					await mkdir(absDir, { recursive: true });
 				}
 
-				const args = withNotebookFlag(
-					notebook.path,
-					buildCreateNoteArgs({ title, directory, template: params.template }),
-				);
-				const result = await runZk({
-					cwd: notebook.path,
-					args,
+				// replace discards the template output, so render an empty template.
+				// Templates can run `{{sh ...}}` helpers that take seconds.
+				const replace = params.content_mode === "replace";
+				const template = replace ? devNull : params.template;
+				const result = await runZkInNotebook(notebook.path, buildCreateNoteArgs({ title, directory, template }), {
 					signal,
 					timeoutMs: 15_000,
 					env: { ...process.env, ...noEditorEnv() },
@@ -117,22 +115,20 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 					throw new ValidationError("zk new did not print a path - check zk config and templates.");
 				}
 
-				const absolutePath = isAbsolute(printedPath)
-					? resolveNotebookPath(notebook.path, printedPath)
-					: resolveNotebookPath(notebook.path, resolve(notebook.path, printedPath));
-				const notebookRoot = await realpath(notebook.path).catch(() => resolve(notebook.path));
-				const relativePath = relative(notebookRoot, absolutePath);
+				const absolutePath = resolveNotebookPath(notebook.path, resolve(notebook.path, printedPath));
+				const relativePath = relative(notebook.path, absolutePath);
 
 				let contentAppended: number | undefined;
 				let contentReplaced: number | undefined;
-				if (params.content !== undefined && (params.content.length > 0 || params.content_mode === "replace")) {
-					const payload = params.content && !params.content.endsWith("\n") ? `${params.content}\n` : params.content;
+				const content = params.content;
+				if (content !== undefined && (content.length > 0 || replace)) {
+					const payload = content && !content.endsWith("\n") ? `${content}\n` : content;
 					const bytes = Buffer.byteLength(payload, "utf8");
 					await withFileMutationQueue(absolutePath, async () => {
-						if (params.content_mode === "replace") await writeFile(absolutePath, payload, "utf8");
+						if (replace) await writeFile(absolutePath, payload, "utf8");
 						else await appendFile(absolutePath, payload, "utf8");
 					});
-					if (params.content_mode === "replace") contentReplaced = bytes;
+					if (replace) contentReplaced = bytes;
 					else contentAppended = bytes;
 				}
 

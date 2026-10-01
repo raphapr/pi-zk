@@ -1,7 +1,6 @@
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
-import { runZk } from "../zk/client.js";
-import { resolveActiveNotebook, withNotebookFlag } from "../zk/notebook.js";
+import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
 import { NotebookOverride } from "../zk/schemas.js";
@@ -47,8 +46,7 @@ export function registerTaglessNotesTool(pi: ExtensionAPI): void {
 			],
 			async execute(_toolCallId, params: TaglessNotesArgs, signal, _onUpdate, ctx) {
 				const notebook = resolveActiveNotebook({ cwd: ctx.cwd, override: params.notebook });
-				const args = withNotebookFlag(notebook.path, buildTaglessNotesArgs(params));
-				const result = await runZk({ cwd: ctx.cwd, args, signal, timeoutMs: 15_000 });
+				const result = await runZkInNotebook(notebook.path, buildTaglessNotesArgs(params), { signal, timeoutMs: 15_000 });
 				const allNotes = parseNoteList(result.stdout);
 				const limit = Math.min(params.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 				const offset = Math.max(params.offset ?? 0, 0);

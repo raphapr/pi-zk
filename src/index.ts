@@ -10,11 +10,10 @@ import { registerRandomNoteTool } from "./tools/random-note.js";
 import { registerReadNoteTool } from "./tools/read-note.js";
 import { registerSearchNotesTool } from "./tools/search-notes.js";
 import { registerTaglessNotesTool } from "./tools/tagless-notes.js";
-import { runZk } from "./zk/client.js";
-import { resolveNotebook, type NotebookResolution } from "./zk/config.js";
+import type { NotebookResolution } from "./zk/config.js";
 import { buildZkGuidance } from "./zk/guidance.js";
 import { NoteCache, resolveAutocompleteLimit } from "./zk/note-cache.js";
-import { withNotebookFlag } from "./zk/notebook.js";
+import { resolveActiveNotebook, runZkInNotebook } from "./zk/notebook.js";
 import { NOTE_LIST_FORMAT, parseNoteList } from "./zk/parsers.js";
 
 const MUTATING_TOOLS = new Set(["zk_create_note", "zk_edit_note", "zk_append_note"]);
@@ -38,12 +37,12 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 	const cachesByNotebook = new Map<string, NoteCache>();
 	let activeNotebook: NotebookResolution | undefined;
 
-	function getOrCreateCache(notebookPath: string, cwd: string): NoteCache {
+	function getOrCreateCache(notebookPath: string): NoteCache {
 		const existing = cachesByNotebook.get(notebookPath);
 		if (existing) return existing;
 		const cache = new NoteCache({
 			load: async () => {
-				const args = withNotebookFlag(notebookPath, [
+				const args = [
 					"list",
 					"--quiet",
 					"--no-pager",
@@ -53,8 +52,8 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 					String(resolveAutocompleteLimit()),
 					"--format",
 					NOTE_LIST_FORMAT,
-				]);
-				const result = await runZk({ cwd, args, timeoutMs: 10_000 });
+				];
+				const result = await runZkInNotebook(notebookPath, args, { timeoutMs: 10_000 });
 				return parseNoteList(result.stdout);
 			},
 		});
@@ -65,14 +64,14 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 	pi.on("session_start", async (_event, ctx) => {
 		let notebook: NotebookResolution;
 		try {
-			notebook = resolveNotebook({ cwd: ctx.cwd });
+			notebook = resolveActiveNotebook({ cwd: ctx.cwd });
 		} catch {
 			// No notebook in scope - skip wikilink autocomplete and guidance silently.
 			activeNotebook = undefined;
 			return;
 		}
 		activeNotebook = notebook;
-		const cache = getOrCreateCache(notebook.path, ctx.cwd);
+		const cache = getOrCreateCache(notebook.path);
 		void cache.get(); // warm in background
 		ctx.ui.addAutocompleteProvider((current) =>
 			createWikilinkAutocompleteProvider(current, () => cache.get()),

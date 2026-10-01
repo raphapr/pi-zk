@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 
-export type NotebookSource = "env_zk_notebook_dir" | "env_zk_dir" | "cwd" | "walk_up";
+export type NotebookSource = "env_zk_notebook_dir" | "env_zk_dir" | "cwd" | "walk_up" | "override";
 
 export interface NotebookResolution {
 	path: string;
