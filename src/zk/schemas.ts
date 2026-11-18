@@ -11,6 +11,41 @@ export const NotebookOverride = Type.Optional(
 );
 
 /**
+ * Plain `{ type: "string", enum }` schema, which every provider accepts.
+ * Built with TypeBox so `Static` infers the union; pi-ai's `StringEnum` is
+ * typed for pi-schema and infers `unknown` here.
+ */
+export function StringEnum<const T extends readonly string[]>(values: T, options: { description?: string } = {}) {
+	return Type.Unsafe<T[number]>({ type: "string", enum: [...values], ...options });
+}
+
+export const ZK_NAMESPACE = {
+	name: "zk",
+	description: "Notes in the active zk notebook: search, read, link graph, create, edit, append.",
+};
+
+export const READ_ONLY = { readOnlyHint: true, openWorldHint: false };
+
+export const NoteSchema = Type.Object({
+	path: Type.String({ description: "Notebook-relative path." }),
+	title: Type.String(),
+	tags: Type.Array(Type.String()),
+});
+
+export const NoteListOutput = Type.Object({
+	notes: Type.Array(NoteSchema),
+	limit: Type.Integer(),
+	offset: Type.Integer(),
+	hasMore: Type.Boolean(),
+	notebook: Type.String(),
+});
+
+export const SingleNoteOutput = Type.Object({
+	note: Type.Optional(NoteSchema),
+	notebook: Type.String(),
+});
+
+/**
  * Pagination shape returned alongside list results.
  */
 export const Pagination = Type.Object({

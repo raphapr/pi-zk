@@ -4,7 +4,7 @@ import { Text } from "@earendil-works/pi-tui";
 import { Type, type Static } from "typebox";
 import { applyEdits } from "../zk/edits.js";
 import { resolveActiveNotebook } from "../zk/notebook.js";
-import { NotebookOverride, NoteRef } from "../zk/schemas.js";
+import { NotebookOverride, NoteRef, ZK_NAMESPACE } from "../zk/schemas.js";
 import { resolveNotebookPath } from "../zk/validate.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
@@ -17,6 +17,15 @@ export const EditNoteParams = Type.Object({
 	path: NoteRef,
 	edits: Type.Array(EditEntry, { minItems: 1, description: "Sequential exact-match replacements applied in order." }),
 	notebook: NotebookOverride,
+});
+
+const EditNoteOutput = Type.Object({
+	path: Type.String(),
+	absolutePath: Type.String(),
+	notebook: Type.String(),
+	editsApplied: Type.Integer(),
+	bytesBefore: Type.Integer(),
+	bytesAfter: Type.Integer(),
 });
 
 export type EditNoteArgs = Static<typeof EditNoteParams>;
@@ -54,6 +63,11 @@ export function registerEditNoteTool(pi: ExtensionAPI): void {
 			description:
 				"Apply exact text-replacement edits to a zk note. Each oldText must match exactly once in the current content; provide surrounding context to anchor unique edits.",
 			parameters: EditNoteParams,
+			outputSchema: EditNoteOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+			// Parallel edits to one note would each match against text the other is changing.
+			executionMode: "sequential",
 			prepareArguments: prepareEditNoteArguments,
 			promptSnippet:
 				"zk_edit_note: Apply exact text replacements to a note. Use unique surrounding context for each oldText.",
@@ -88,7 +102,7 @@ export function registerEditNoteTool(pi: ExtensionAPI): void {
 					`${details.bytesBefore} → ${details.bytesAfter} bytes`,
 				].join("\n");
 
-				return { content: [{ type: "text", text: summary }], details };
+				return { content: [{ type: "text", text: summary }], details, structuredContent: { ...details } };
 			},
 			renderCall(args, theme) {
 				return renderToolCall(theme, "zk_edit_note", `${args.path} (${args.edits.length} edit${args.edits.length === 1 ? "" : "s"})`);

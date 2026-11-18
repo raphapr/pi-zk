@@ -1,10 +1,9 @@
-import { StringEnum } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
-import { NotebookOverride } from "../zk/schemas.js";
+import { NoteListOutput, NotebookOverride, READ_ONLY, StringEnum, ZK_NAMESPACE } from "../zk/schemas.js";
 import { validateNoteRef } from "../zk/validate.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
@@ -38,10 +37,10 @@ export const SearchNotesParams = Type.Object({
 		Type.String({ description: "zk sort criterion. Default `modified-` (newest first)." }),
 	),
 	limit: Type.Optional(
-		Type.Number({ description: `Max results. Default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}.`, minimum: 1, maximum: MAX_LIMIT }),
+		Type.Integer({ description: `Max results. Default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}.`, minimum: 1, maximum: MAX_LIMIT }),
 	),
 	offset: Type.Optional(
-		Type.Number({ description: "Skip the first N results. Performed locally after fetch.", minimum: 0 }),
+		Type.Integer({ description: "Skip the first N results. Performed locally after fetch.", minimum: 0 }),
 	),
 	notebook: NotebookOverride,
 });
@@ -126,6 +125,9 @@ export function registerSearchNotesTool(pi: ExtensionAPI): void {
 			label: "zk Search",
 			description: "Search zk notes by full-text query, tags, paths, and date ranges. Returns path, title, and tags per match.",
 			parameters: SearchNotesParams,
+			outputSchema: NoteListOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: READ_ONLY,
 			promptSnippet:
 				"zk_search_notes: Find notes in the active zk notebook by FTS query, tags, paths, or date filters.",
 			promptGuidelines: [
@@ -158,7 +160,11 @@ export function registerSearchNotesTool(pi: ExtensionAPI): void {
 					fullOutputPath: formatted.fullOutputPath,
 				};
 
-				return { content: [{ type: "text", text: formatted.visible }], details };
+				return {
+					content: [{ type: "text", text: formatted.visible }],
+					details,
+					structuredContent: { notes: sliced, limit, offset, hasMore, notebook: notebook.path },
+				};
 			},
 			renderCall(args, theme) {
 				const parts: string[] = [];

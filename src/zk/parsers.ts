@@ -1,13 +1,15 @@
-export interface Note {
+// Type aliases, not interfaces: only aliases are assignable to the JSON value
+// type of a tool's `structuredContent`.
+export type Note = {
 	path: string;
 	title: string;
 	tags: string[];
-}
+};
 
-export interface Tag {
+export type Tag = {
 	name: string;
 	count: number;
-}
+};
 
 /**
  * Format string the extension passes to `zk list` to emit machine-readable rows.

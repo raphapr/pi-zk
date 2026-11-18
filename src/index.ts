@@ -11,12 +11,33 @@ import { registerReadNoteTool } from "./tools/read-note.js";
 import { registerSearchNotesTool } from "./tools/search-notes.js";
 import { registerTaglessNotesTool } from "./tools/tagless-notes.js";
 import type { NotebookResolution } from "./zk/config.js";
-import { buildZkGuidance } from "./zk/guidance.js";
+import { buildZkGuidance, ZK_GUIDANCE_SECTION } from "./zk/guidance.js";
 import { NoteCache, resolveAutocompleteLimit } from "./zk/note-cache.js";
 import { resolveActiveNotebook, runZkInNotebook } from "./zk/notebook.js";
 import { NOTE_LIST_FORMAT, parseNoteList } from "./zk/parsers.js";
 
 const MUTATING_TOOLS = new Set(["zk_create_note", "zk_edit_note", "zk_append_note"]);
+
+/**
+ * Fit the declared tools to the session. Without a notebook the zk tools are
+ * dead weight in every request, so they are withdrawn. With one, `tool_search`
+ * is switched on so the model can reach the deferred zk tools.
+ */
+export function syncActiveTools(
+	pi: Pick<ExtensionAPI, "getActiveTools" | "getAllTools" | "setActiveTools">,
+	hasNotebook: boolean,
+): void {
+	const active = pi.getActiveTools();
+	if (!hasNotebook) {
+		const next = active.filter((name) => !name.startsWith("zk_"));
+		if (next.length !== active.length) pi.setActiveTools(next);
+		return;
+	}
+	if (active.includes("tool_search")) return;
+	if (pi.getAllTools().some((tool) => tool.name === "tool_search")) {
+		pi.setActiveTools([...active, "tool_search"]);
+	}
+}
 
 export default function pizkExtension(pi: ExtensionAPI): void {
 	registerSearchNotesTool(pi);
@@ -68,9 +89,11 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 		} catch {
 			// No notebook in scope - skip wikilink autocomplete and guidance silently.
 			activeNotebook = undefined;
+			syncActiveTools(pi, false);
 			return;
 		}
 		activeNotebook = notebook;
+		syncActiveTools(pi, true);
 		const cache = getOrCreateCache(notebook.path);
 		void cache.get(); // warm in background
 		ctx.ui.addAutocompleteProvider((current) =>
@@ -79,8 +102,10 @@ export default function pizkExtension(pi: ExtensionAPI): void {
 	});
 
 	pi.on("before_agent_start", (event) => {
-		if (!activeNotebook) return undefined;
-		return { systemPrompt: `${event.systemPrompt}\n\n${buildZkGuidance(activeNotebook)}` };
+		if (!activeNotebook) return;
+		// A section, not a returned systemPrompt: pi patches only this section
+		// instead of replacing (and re-caching) the whole prompt.
+		event.systemPromptOptions.sections[ZK_GUIDANCE_SECTION] = buildZkGuidance(activeNotebook);
 	});
 
 	pi.on("tool_result", (event) => {

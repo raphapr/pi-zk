@@ -1,11 +1,10 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { devNull } from "node:os";
 import { relative, resolve } from "node:path";
-import { StringEnum } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI, withFileMutationQueue } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
-import { NotebookOverride } from "../zk/schemas.js";
+import { NotebookOverride, StringEnum, ZK_NAMESPACE } from "../zk/schemas.js";
 import {
 	resolveCreatableNotebookPath,
 	resolveNotebookPath,
@@ -34,6 +33,13 @@ export const CreateNoteParams = Type.Object({
 		}),
 	),
 	notebook: NotebookOverride,
+});
+
+const CreateNoteOutput = Type.Object({
+	path: Type.String({ description: "Notebook-relative path of the new note." }),
+	absolutePath: Type.String(),
+	title: Type.String(),
+	notebook: Type.String(),
 });
 
 export type CreateNoteArgs = Static<typeof CreateNoteParams>;
@@ -79,6 +85,11 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 			label: "zk Create",
 			description: "Create a new zk note via `zk new`. Returns the notebook-relative path. Content can append after or replace the template output.",
 			parameters: CreateNoteParams,
+			outputSchema: CreateNoteOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+			// `zk new` writes the notebook index; keep writers out of each other's way.
+			executionMode: "sequential",
 			promptSnippet:
 				"zk_create_note: Create a new note (optionally inside a subdirectory, with a template, and with a content body).",
 			promptGuidelines: [
@@ -154,7 +165,11 @@ export function registerCreateNoteTool(pi: ExtensionAPI): void {
 					.filter(Boolean)
 					.join("\n");
 
-				return { content: [{ type: "text", text: summary }], details };
+				return {
+					content: [{ type: "text", text: summary }],
+					details,
+					structuredContent: { path: relativePath, absolutePath, title, notebook: notebook.path },
+				};
 			},
 			renderCall(args, theme) {
 				const summary = [args.title, args.directory ? `(${args.directory})` : undefined]

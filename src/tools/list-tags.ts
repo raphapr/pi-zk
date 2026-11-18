@@ -3,11 +3,16 @@ import { Type, type Static } from "typebox";
 import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderTagListText } from "../zk/output.js";
 import { parseTagList, TAG_LIST_FORMAT, type Tag } from "../zk/parsers.js";
-import { NotebookOverride } from "../zk/schemas.js";
+import { NotebookOverride, READ_ONLY, ZK_NAMESPACE } from "../zk/schemas.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
 export const ListTagsParams = Type.Object({
 	notebook: NotebookOverride,
+});
+
+const ListTagsOutput = Type.Object({
+	tags: Type.Array(Type.Object({ name: Type.String(), count: Type.Integer() })),
+	notebook: Type.String(),
 });
 
 export type ListTagsArgs = Static<typeof ListTagsParams>;
@@ -28,6 +33,9 @@ export function registerListTagsTool(pi: ExtensionAPI): void {
 			label: "zk Tags",
 			description: "List every tag in the active zk notebook with note counts. Useful for triage and discovery.",
 			parameters: ListTagsParams,
+			outputSchema: ListTagsOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: READ_ONLY,
 			promptSnippet: "zk_list_tags: List all tags in the active zk notebook with note counts.",
 			promptGuidelines: [
 				"Use zk_list_tags when the user asks about tag taxonomy or wants to discover tags.",
@@ -40,7 +48,7 @@ export function registerListTagsTool(pi: ExtensionAPI): void {
 				const text = renderTagListText(tags);
 				const formatted = await formatTextOutput({ text, prefix: "pi-zk-tags-" });
 				const details: ListTagsDetails = { tags, notebook: notebook.path };
-				return { content: [{ type: "text", text: formatted.visible }], details };
+				return { content: [{ type: "text", text: formatted.visible }], details, structuredContent: { ...details } };
 			},
 			renderCall(_args, theme) {
 				return renderToolCall(theme, "zk_list_tags");

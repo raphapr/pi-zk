@@ -3,7 +3,7 @@ import { Type, type Static } from "typebox";
 import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
-import { NoteRef, NotebookOverride } from "../zk/schemas.js";
+import { NoteListOutput, NoteRef, NotebookOverride, READ_ONLY, ZK_NAMESPACE } from "../zk/schemas.js";
 import { validateNoteRef } from "../zk/validate.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
@@ -19,9 +19,9 @@ function buildParamsSchema(supportsRecursive: boolean) {
 	const base = {
 		path: NoteRef,
 		limit: Type.Optional(
-			Type.Number({ minimum: 1, maximum: MAX_LIMIT, description: `Max results. Default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}.` }),
+			Type.Integer({ minimum: 1, maximum: MAX_LIMIT, description: `Max results. Default ${DEFAULT_LIMIT}, max ${MAX_LIMIT}.` }),
 		),
-		offset: Type.Optional(Type.Number({ minimum: 0, description: "Skip the first N results (applied locally)." })),
+		offset: Type.Optional(Type.Integer({ minimum: 0, description: "Skip the first N results (applied locally)." })),
 		sort: Type.Optional(Type.String({ description: "zk sort criterion. Default `modified-`." })),
 		notebook: NotebookOverride,
 	};
@@ -32,7 +32,7 @@ function buildParamsSchema(supportsRecursive: boolean) {
 		...base,
 		recursive: Type.Optional(Type.Boolean({ description: "Walk the link graph beyond direct neighbors." })),
 		max_distance: Type.Optional(
-			Type.Number({ minimum: 1, description: "Cap recursive traversal at this hop count." }),
+			Type.Integer({ minimum: 1, description: "Cap recursive traversal at this hop count." }),
 		),
 	});
 }
@@ -55,6 +55,7 @@ export interface LinkGraphSpec {
 	promptGuidelines: string[];
 	zkFlag: "--link-to" | "--linked-by" | "--related";
 	supportsRecursive: boolean;
+	deferred?: boolean;
 }
 
 /**
@@ -109,6 +110,10 @@ function registerLinkGraphTool(pi: ExtensionAPI, spec: LinkGraphSpec): void {
 			label: spec.label,
 			description: spec.description,
 			parameters,
+			outputSchema: NoteListOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: READ_ONLY,
+			exposure: spec.deferred ? "deferred" : "direct",
 			promptSnippet: spec.promptSnippet,
 			promptGuidelines: spec.promptGuidelines,
 			async execute(_toolCallId, params: Params, signal, _onUpdate, ctx) {
@@ -139,7 +144,11 @@ function registerLinkGraphTool(pi: ExtensionAPI, spec: LinkGraphSpec): void {
 					notebook: notebook.path,
 				};
 
-				return { content: [{ type: "text", text: formatted.visible }], details };
+				return {
+					content: [{ type: "text", text: formatted.visible }],
+					details,
+					structuredContent: { notes: sliced, limit, offset, hasMore, notebook: notebook.path },
+				};
 			},
 			renderCall(args, theme) {
 				const params = args as LinkGraphArgs;
@@ -207,5 +216,6 @@ export function registerRelatedTool(pi: ExtensionAPI): void {
 		],
 		zkFlag: "--related",
 		supportsRecursive: false,
+		deferred: true,
 	});
 }

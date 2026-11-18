@@ -3,7 +3,7 @@ import { Type, type Static } from "typebox";
 import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
-import { NotebookOverride } from "../zk/schemas.js";
+import { NotebookOverride, READ_ONLY, SingleNoteOutput, ZK_NAMESPACE } from "../zk/schemas.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
 export const RandomNoteParams = Type.Object({
@@ -31,6 +31,10 @@ export function registerRandomNoteTool(pi: ExtensionAPI): void {
 			label: "zk Random",
 			description: "Return one randomly selected note from the notebook (optionally tag-filtered).",
 			parameters: RandomNoteParams,
+			outputSchema: SingleNoteOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: READ_ONLY,
+			exposure: "deferred",
 			promptSnippet: "zk_random_note: Return one randomly selected note for serendipitous review.",
 			promptGuidelines: [
 				"Use zk_random_note when the user asks for a random note or wants to be surprised.",
@@ -43,7 +47,9 @@ export function registerRandomNoteTool(pi: ExtensionAPI): void {
 				const text = note ? renderNoteListText([note], 1) : "No notes found.";
 				const formatted = await formatTextOutput({ text, prefix: "pi-zk-random-" });
 				const details: RandomNoteDetails = { note, notebook: notebook.path };
-				return { content: [{ type: "text", text: formatted.visible }], details };
+				const structuredContent: Record<string, Note | string> = { notebook: notebook.path };
+				if (note) structuredContent.note = note;
+				return { content: [{ type: "text", text: formatted.visible }], details, structuredContent };
 			},
 			renderCall(args, theme) {
 				return renderToolCall(theme, "zk_random_note", args.tag ? `#${args.tag}` : undefined);

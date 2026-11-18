@@ -3,7 +3,7 @@ import { Type, type Static } from "typebox";
 import { resolveActiveNotebook, runZkInNotebook } from "../zk/notebook.js";
 import { formatTextOutput, renderNoteListText } from "../zk/output.js";
 import { NOTE_LIST_FORMAT, parseNoteList, type Note } from "../zk/parsers.js";
-import { NotebookOverride } from "../zk/schemas.js";
+import { NotebookOverride, READ_ONLY, SingleNoteOutput, ZK_NAMESPACE } from "../zk/schemas.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
 export const LastModifiedParams = Type.Object({
@@ -31,6 +31,9 @@ export function registerLastModifiedTool(pi: ExtensionAPI): void {
 			label: "zk Last Modified",
 			description: "Return the most recently modified note (optionally filtered by tag).",
 			parameters: LastModifiedParams,
+			outputSchema: SingleNoteOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: READ_ONLY,
 			promptSnippet: "zk_last_modified: Return the most recently edited note (optionally tag-filtered).",
 			promptGuidelines: [
 				"Use zk_last_modified when the user asks `what did I work on most recently` or wants to resume a note.",
@@ -44,7 +47,9 @@ export function registerLastModifiedTool(pi: ExtensionAPI): void {
 				const text = note ? renderNoteListText([note], 1) : "No notes found.";
 				const formatted = await formatTextOutput({ text, prefix: "pi-zk-last-" });
 				const details: LastModifiedDetails = { note, notebook: notebook.path };
-				return { content: [{ type: "text", text: formatted.visible }], details };
+				const structuredContent: Record<string, Note | string> = { notebook: notebook.path };
+				if (note) structuredContent.note = note;
+				return { content: [{ type: "text", text: formatted.visible }], details, structuredContent };
 			},
 			renderCall(args, theme) {
 				return renderToolCall(theme, "zk_last_modified", args.tag ? `#${args.tag}` : undefined);

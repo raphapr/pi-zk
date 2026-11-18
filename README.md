@@ -22,6 +22,7 @@ pi install git:github.com/raphapr/pi-zk
 
 Requirements:
 
+- Pi **1.0** or newer (tool exposure, annotations, and structured output)
 - [`zk`](https://github.com/zk-org/zk) **0.15** or newer on `PATH`
 - An initialised zk notebook (`zk init` in your notes directory)
 
@@ -44,6 +45,14 @@ Requirements:
 
 All tools accept an optional `notebook` parameter that overrides env-based resolution for a single call.
 
+How the tools reach the model:
+
+- `zk_related`, `zk_tagless_notes`, and `zk_random_note` are registered with `deferred` exposure. They are not declared in every request; the model loads them with Pi's `tool_search`, which pi-zk activates when a notebook is in scope. Codemode scripts can call them at any time.
+- When no notebook is in scope at session start, pi-zk removes the `zk_*` tools from the active set so they cost no context. To use the `notebook` override from such a session, activate them with `--tools` or `defaultTools`.
+- Read-only tools carry `readOnlyHint`; `zk_edit_note` carries `destructiveHint`. Permission extensions can use these hints to skip confirming reads.
+- Every tool declares an `outputSchema` and returns `structuredContent`, so codemode scripts receive data (`notes`, `tags`, `hasMore`, paths) instead of text.
+- `zk_create_note`, `zk_edit_note`, and `zk_append_note` run sequentially, so several writes in one model turn apply in order.
+
 `zk_create_note` accepts `content_mode: "append" | "replace"`. The default keeps the generated template and appends `content`; `replace` overwrites the template output with `content` after `zk new` chooses the note path. In `replace` mode the template is not rendered, so slow template helpers such as `{{sh ...}}` never run.
 
 ## Wikilink autocomplete
@@ -65,7 +74,7 @@ see [[zett▎       zettelkasten   — Zettelkasten  #theory
 
 ## System prompt guidance
 
-When a notebook is detected at session start, pi-zk appends a short routing block to the system prompt so the LLM knows to prefer `zk_*` tools over generic `read` / `edit` / `bash` on note files. When no notebook is in scope the block is omitted.
+When a notebook is detected at session start, pi-zk adds a short `zk_notebook` section to the system prompt so the LLM knows where the notebook is and to prefer `zk_*` tools over generic `read` / `edit` / `bash` on note files. Per-tool routing rules live in each tool's prompt guidelines. When no notebook is in scope the section is omitted.
 
 ## Configuration
 

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildZkGuidance } from "../src/zk/guidance.ts";
+import { buildZkGuidance, DEFERRED_ZK_TOOLS } from "../src/zk/guidance.ts";
 
 test("buildZkGuidance includes notebook path and source", () => {
 	const text = buildZkGuidance({ path: "/notes/journal", source: "walk_up" });
@@ -8,30 +8,23 @@ test("buildZkGuidance includes notebook path and source", () => {
 	assert.match(text, /walk_up/);
 });
 
-test("buildZkGuidance mentions key tools by name", () => {
-	const text = buildZkGuidance({ path: "/notes", source: "env_zk_notebook_dir" });
-	for (const name of [
-		"zk_search_notes",
-		"zk_read_note",
-		"zk_list_tags",
-		"zk_tagless_notes",
-		"zk_last_modified",
-		"zk_random_note",
-		"zk_create_note",
-		"zk_edit_note",
-		"zk_append_note",
-		"zk_link_to",
-		"zk_linked_by",
-		"zk_related",
-	]) {
-		assert.ok(text.includes(name), `expected guidance to mention ${name}`);
-	}
+test("buildZkGuidance routes note work to the zk tools", () => {
+	const text = buildZkGuidance({ path: "/notes", source: "cwd" });
+	assert.match(text, /Prefer the `zk_\*` tools/);
 });
 
-test("buildZkGuidance gives safe read and edit routing", () => {
+test("buildZkGuidance names the deferred tools and how to reach them", () => {
+	const text = buildZkGuidance({ path: "/notes", source: "env_zk_notebook_dir" });
+	for (const name of DEFERRED_ZK_TOOLS) {
+		assert.ok(text.includes(name), `expected guidance to mention ${name}`);
+	}
+	assert.match(text, /tool_search/);
+});
+
+test("buildZkGuidance leaves per-tool routing to promptGuidelines", () => {
 	const text = buildZkGuidance({ path: "/notes", source: "cwd" });
-	assert.match(text, /Do not answer content questions from search results alone/);
-	assert.match(text, /Before editing, read the target note/);
+	assert.ok(!text.includes("zk_search_notes"));
+	assert.ok(!text.includes("zk_edit_note"));
 });
 
 test("buildZkGuidance mentions wikilink autocomplete", () => {

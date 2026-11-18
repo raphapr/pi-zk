@@ -3,7 +3,7 @@ import { defineTool, type ExtensionAPI, withFileMutationQueue } from "@earendil-
 import { Type, type Static } from "typebox";
 import { buildAppendPayload } from "../zk/edits.js";
 import { resolveActiveNotebook } from "../zk/notebook.js";
-import { NotebookOverride, NoteRef } from "../zk/schemas.js";
+import { NotebookOverride, NoteRef, ZK_NAMESPACE } from "../zk/schemas.js";
 import { resolveNotebookPath } from "../zk/validate.js";
 import { renderToolCall, renderToolResultText } from "./common.js";
 
@@ -14,6 +14,14 @@ export const AppendNoteParams = Type.Object({
 		Type.Boolean({ description: "Insert a blank line between existing content and the new block. Default true." }),
 	),
 	notebook: NotebookOverride,
+});
+
+const AppendNoteOutput = Type.Object({
+	path: Type.String(),
+	absolutePath: Type.String(),
+	notebook: Type.String(),
+	bytesAppended: Type.Integer(),
+	bytesAfter: Type.Integer(),
 });
 
 export type AppendNoteArgs = Static<typeof AppendNoteParams>;
@@ -34,6 +42,10 @@ export function registerAppendNoteTool(pi: ExtensionAPI): void {
 			description:
 				"Append a markdown block to the end of a zk note. Ensures a blank line separator by default so adjacent paragraphs render correctly.",
 			parameters: AppendNoteParams,
+			outputSchema: AppendNoteOutput,
+			namespace: ZK_NAMESPACE,
+			annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+			executionMode: "sequential",
 			promptSnippet:
 				"zk_append_note: Append a markdown block to a note. Use for new bullets, sections, or log entries.",
 			promptGuidelines: [
@@ -65,7 +77,7 @@ export function registerAppendNoteTool(pi: ExtensionAPI): void {
 					`Final size: ${details.bytesAfter} bytes`,
 				].join("\n");
 
-				return { content: [{ type: "text", text: summary }], details };
+				return { content: [{ type: "text", text: summary }], details, structuredContent: { ...details } };
 			},
 			renderCall(args, theme) {
 				return renderToolCall(theme, "zk_append_note", args.path);

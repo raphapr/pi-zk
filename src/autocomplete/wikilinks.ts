@@ -34,6 +34,7 @@ export function createWikilinkAutocompleteProvider(
 	getNotes: () => Promise<CachedNote[] | undefined>,
 ): AutocompleteProvider {
 	return {
+		triggerCharacters: ["["],
 		async getSuggestions(lines, cursorLine, cursorCol, options): Promise<AutocompleteSuggestions | null> {
 			const line = lines[cursorLine] ?? "";
 			const before = line.slice(0, cursorCol);
